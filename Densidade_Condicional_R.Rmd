@@ -1,0 +1,287 @@
+---
+title: "Uma abordagem estatística sobre a estimação de _redshifts_ de quasares usando dados do S-PLUS"
+subtitle: "Trabalho de Graduação A"
+author: "Discente: Gabriela Pereira Soares"
+date: "Janeiro de 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r dir, include=FALSE}
+setwd("C:/Users/Gabriela/Documents/TG/Códigos TG1")
+```
+
+```{r libs, message=FALSE}
+library(FlexCoDE)
+```
+
+# Densidade Condicional: filtros _narrow_ conseguem melhorar as estimativas de p(z)?
+
+Vamos carregar o conjunto de dados já tratados no Jupyter Notebook.
+
+```{r dados}
+trainf0=read.csv("~/TG/Códigos TG1/dados/trainf0.csv", encoding = "utf8")
+validf0=read.csv("~/TG/Códigos TG1/dados/validf0.csv", encoding = "utf8")
+teste=read.csv("~/TG/Códigos TG1/dados/teste.csv", encoding = "utf8")
+```
+
+Vamos também definir novamente as colunas a serem utilizadas.
+
+```{r cols}
+apers = c("auto", "aper_3", "aper_6", "iso", "petro", "PStotal") # abertura isofótica
+feat_broad = c('U', 'G', 'R', 'I', 'Z') # banda larga
+feat_narrow = c('J0378', 'J0395', 'J0410', 'J0430', 'J0515', 'J0660', 'J0861') # banda estreita
+
+feat = c(feat_broad,feat_narrow)
+splus = c()
+
+for (a in apers){
+    splus = c(splus,paste0(feat,"_",a))}
+
+# Magnitudes
+wise = c("W1_MAG", "W2_MAG")
+galex = c('FUVmag', 'NUVmag')
+
+# Erros
+error_splus = paste0("e_",splus)
+error_wise = paste0("_ERR",wise)
+error_galex = paste0("e_",galex)
+
+# Colunas
+cols = c('index','Z',splus,wise,galex,error_splus,error_wise,error_galex)
+```
+
+Agora, vamos treinar alguns modelos e compará-los
+
+### 
+
+```{r mod1}
+start.time <- Sys.time()
+
+set.seed(47)
+fit1=fitFlexCoDE(xTrain=trainf0[1:100,c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0[1:100,'Z'],
+                xValidation=validf0[1:100,c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0[1:100,'Z'],
+                xTest=teste[1:100,c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste[1:100,'Z'],
+                nIMax = 2,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=20),
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
+```{r mod2}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2=fitFlexCoDE(xTrain=trainf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0[1:1000,'Z'],
+                xValidation=validf0[1:100,c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0[1:100,'Z'],
+                xTest=teste[1:100,c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste[1:100,'Z'],
+                nIMax = 5,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=20),
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
+```{r mod3}
+start.time <- Sys.time()
+
+set.seed(47)
+fit3=fitFlexCoDE(xTrain=trainf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0[1:1000,'Z'],
+                xValidation=validf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0[1:1000,'Z'],
+                xTest=teste[1:1000,c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste[1:1000,'Z'],
+                nIMax = 10,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=20),
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
+```{r mod4}
+start.time <- Sys.time()
+
+set.seed(47)
+fit4=fitFlexCoDE(xTrain=trainf0[1:5000,c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0[1:5000,'Z'],
+                xValidation=validf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0[1:1000,'Z'],
+                xTest=teste[1:1000,c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste[1:1000,'Z'],
+                nIMax = 10,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=20),
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
+```{r mod5}
+start.time <- Sys.time()
+
+set.seed(47)
+fit5=fitFlexCoDE(xTrain=trainf0[1:5000,c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0[1:5000,'Z'],
+                xValidation=validf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0[1:1000,'Z'],
+                xTest=teste[1:1000,c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste[1:1000,'Z'],
+                nIMax = 10,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=100),
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
+```{r mod6}
+start.time <- Sys.time()
+
+set.seed(47)
+fit6=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0['Z'],
+                xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0['Z'],
+                xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste['Z'],
+                nIMax = 5,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=30),
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
+```{r print6}
+print(fit6)
+```
+
+```{r plot6}
+plot(fit6,xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste['Z'])
+```
+
+```{r mod7}
+start.time <- Sys.time()
+
+set.seed(47)
+fit7=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0['Z'],
+                xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0['Z'],
+                xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste['Z'],
+                nIMax = 15,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=30),
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
+```{r}
+print(fit7)
+```
+
+```{r mod8}
+start.time <- Sys.time()
+
+set.seed(47)
+fit8=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0['Z'],
+                xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0['Z'],
+                xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste['Z'],
+                nIMax = 15,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=30),
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+```{r}
+print(fit8)
+```
+
+
+```{r mod9}
+start.time <- Sys.time()
+
+set.seed(47)
+fit9=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                zTrain=trainf0['Z'],
+                xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                zValidation=validf0['Z'],
+                xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                zTest=teste['Z'],
+                nIMax = 15,
+                system='Fourier',
+                regressionFunction = regressionFunction.Forest,
+                regressionFunction.extra = list(nCores=4, ntree=30),
+                chooseDelta = TRUE,
+                chooseSharpen = TRUE,
+                verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
+```{r}
+print(fit9)
+```
+
+```{r}
+fit9$bestDelta
+```
+```{r}
+fit9$bestAlpha
+```
+```{r}
+fit9$estimatedRisk
+```
+
+```{r}
+# Erros estimados para cada valor de I (número de coeficientes de expansão) usando o conjunto de validação
+fit9$bestError # erro para I=15
+```
+
