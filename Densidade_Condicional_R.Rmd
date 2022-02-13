@@ -1,34 +1,33 @@
 ---
-title: "Uma abordagem estatística sobre a estimação de _redshifts_ de quasares usando dados do S-PLUS"
-subtitle: "Trabalho de Graduação A"
-author: "Discente: Gabriela Pereira Soares"
-date: "Janeiro de 2021"
-output: pdf_document
+title: "Densidade_Condicional_R"
+author: "Gabriela Pereira Soares"
+date: "13/02/2022"
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r dir, include=FALSE}
-setwd("C:/Users/Gabriela/Documents/TG/Códigos TG1")
-```
+```{r libs, include=FALSE, message=FALSE}
+# Instalação do pacote (rodar só 1x)
+#install.packages("devtools")
+#library(devtools)
+#devtools::install_github("rizbicki/FlexCoDE")
 
-```{r libs, message=FALSE}
 library(FlexCoDE)
+library(ggplot2)
 ```
 
-# Densidade Condicional: filtros _narrow_ conseguem melhorar as estimativas de p(z)?
+Vamos carregar os dados já tratados.
 
-Vamos carregar o conjunto de dados já tratados no Jupyter Notebook.
-
-```{r dados}
-trainf0=read.csv("~/TG/Códigos TG1/dados/trainf0.csv", encoding = "utf8")
-validf0=read.csv("~/TG/Códigos TG1/dados/validf0.csv", encoding = "utf8")
-teste=read.csv("~/TG/Códigos TG1/dados/teste.csv", encoding = "utf8")
+```{r data}
+trainf0=read.csv("~/TCC/trainf0.csv", encoding = "utf8")
+validf0=read.csv("~/TCC/validf0.csv", encoding = "utf8")
+teste=read.csv("~/TCC/teste.csv", encoding = "utf8")
 ```
 
-Vamos também definir novamente as colunas a serem utilizadas.
+Vamos também definir novamente as colunas que iremos trabalhar.
 
 ```{r cols}
 apers = c("auto", "aper_3", "aper_6", "iso", "petro", "PStotal") # abertura isofótica
@@ -39,7 +38,7 @@ feat = c(feat_broad,feat_narrow)
 splus = c()
 
 for (a in apers){
-    splus = c(splus,paste0(feat,"_",a))}
+  splus = c(splus,paste0(feat,"_",a))}
 
 # Magnitudes
 wise = c("W1_MAG", "W2_MAG")
@@ -54,234 +53,307 @@ error_galex = paste0("e_",galex)
 cols = c('index','Z',splus,wise,galex,error_splus,error_wise,error_galex)
 ```
 
-Agora, vamos treinar alguns modelos e compará-los
+```{r plot, include=FALSE}
+# Plot density
+plot_dens = function(obj,xtest,ztest){
+  pred=predict(obj,xtest,B=obj$n_grid,predictionBandProb=FALSE)
+  randomOrder=sample(1:nrow(xtest),9,replace=FALSE)
+  data=data.frame(x=pred$z,y=pred$CDE[randomOrder[1],],
+                  dataPoint=rep(1,length(pred$z)),
+                  vertical=ztest[randomOrder[1],])
+  for(i in 2:9){
+    dataB=data.frame(x=pred$z,
+                     y=pred$CDE[randomOrder[i],],
+                     dataPoint=rep(i,length(pred$z)),
+                     vertical=ztest[randomOrder[1],])
+    data=rbind(data,dataB)
+  }
+  g=ggplot2::ggplot(data,ggplot2::aes(x=x,y=y))+
+    ggplot2::geom_line(size=1,color=2)+
+    ggplot2::xlab("Response")+
+    ggplot2::ylab("Estimated Density")+
+    ggplot2::geom_vline(ggplot2::aes(xintercept=vertical),size=1)+
+    ggplot2::theme(axis.title=ggplot2::element_text(size=12,face="bold"))+ 
+    ggplot2::facet_wrap(~ dataPoint)
+  print(g)
+}
+```
 
-### 
 
-```{r mod1}
+# Densidade Condicional: filtros _narrow_ conseguem melhorar as estimativas de p(z)?
+
+Foi testado anteriormente um modelo com $nIMax=30$. Porém o algoritmo encontrou como melhor I o próprio valor máximo. Assim, aumentamos para 45.
+
+### Modelo 1: Regressor Random Forest sem filtros _narrow_
+```{r}
 start.time <- Sys.time()
 
 set.seed(47)
-fit1=fitFlexCoDE(xTrain=trainf0[1:100,c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0[1:100,'Z'],
-                xValidation=validf0[1:100,c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0[1:100,'Z'],
-                xTest=teste[1:100,c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste[1:100,'Z'],
-                nIMax = 2,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=20),
-                verbose=TRUE)
+fit1=fitFlexCoDE(xTrain=trainf0[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=teste[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=4, ntree=100),
+                 chooseDelta = TRUE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
 
 end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
-```
-
-```{r mod2}
-start.time <- Sys.time()
-
-set.seed(47)
-fit2=fitFlexCoDE(xTrain=trainf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0[1:1000,'Z'],
-                xValidation=validf0[1:100,c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0[1:100,'Z'],
-                xTest=teste[1:100,c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste[1:100,'Z'],
-                nIMax = 5,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=20),
-                verbose=TRUE)
-
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
-```
-
-```{r mod3}
-start.time <- Sys.time()
-
-set.seed(47)
-fit3=fitFlexCoDE(xTrain=trainf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0[1:1000,'Z'],
-                xValidation=validf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0[1:1000,'Z'],
-                xTest=teste[1:1000,c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste[1:1000,'Z'],
-                nIMax = 10,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=20),
-                verbose=TRUE)
-
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
-```
-
-```{r mod4}
-start.time <- Sys.time()
-
-set.seed(47)
-fit4=fitFlexCoDE(xTrain=trainf0[1:5000,c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0[1:5000,'Z'],
-                xValidation=validf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0[1:1000,'Z'],
-                xTest=teste[1:1000,c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste[1:1000,'Z'],
-                nIMax = 10,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=20),
-                verbose=TRUE)
-
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
-```
-
-```{r mod5}
-start.time <- Sys.time()
-
-set.seed(47)
-fit5=fitFlexCoDE(xTrain=trainf0[1:5000,c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0[1:5000,'Z'],
-                xValidation=validf0[1:1000,c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0[1:1000,'Z'],
-                xTest=teste[1:1000,c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste[1:1000,'Z'],
-                nIMax = 10,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=100),
-                verbose=TRUE)
-
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
-```
-
-```{r mod6}
-start.time <- Sys.time()
-
-set.seed(47)
-fit6=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0['Z'],
-                xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0['Z'],
-                xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste['Z'],
-                nIMax = 5,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=30),
-                verbose=TRUE)
-
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
-```
-
-```{r print6}
-print(fit6)
-```
-
-```{r plot6}
-plot(fit6,xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste['Z'])
-```
-
-```{r mod7}
-start.time <- Sys.time()
-
-set.seed(47)
-fit7=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0['Z'],
-                xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0['Z'],
-                xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste['Z'],
-                nIMax = 15,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=30),
-                verbose=TRUE)
-
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
+time.taken1 <- end.time - start.time
+time.taken1 # tempo de execução
 ```
 
 ```{r}
-print(fit7)
+print(fit1)
 ```
-
-```{r mod8}
+```{r}
+fit1$estimatedRisk
+```
+```{r}
+fit1$bestI
+```
+```{r}
+fit1$bestDelta
+```
+```{r}
+fit1$bestAlpha
+```
+### Modelo 2: Random Forest com filtros _narrow_
+```{r}
 start.time <- Sys.time()
 
 set.seed(47)
-fit8=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0['Z'],
-                xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0['Z'],
-                xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste['Z'],
-                nIMax = 15,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=30),
-                verbose=TRUE)
+fit2=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=4, ntree=100),
+                 chooseDelta = TRUE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
 
 end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+
+```{r}
+print(fit2)
 ```
 ```{r}
-print(fit8)
+fit2$estimatedRisk
+```
+```{r}
+# O melhor valor de I foi o próprio máximo (aumentar!)
+fit2$bestI
+```
+```{r}
+fit2$bestDelta
+```
+```{r}
+fit2$bestAlpha
+```
+Vamos comparar a estimativa da densidade condicional de algumas amostras com e sem os filtros _narrow_.
+
+```{r}
+xtest1=teste[c(paste0(feat_broad,"_iso"),wise,galex)]
+xtest2=teste[c(paste0(feat,"_iso"),wise,galex)]
+ztest=teste['Z']
+```
+```{r}
+  pred1=predict(fit1,xtest1,B=fit1$n_grid,predictionBandProb=FALSE)
+  pred2=predict(fit2,xtest2,B=fit2$n_grid,predictionBandProb=FALSE)
+  
+  randomOrder=sample(1:nrow(xtest1),9,replace=FALSE)
+  data1=data.frame(x=pred1$z,y=pred1$CDE[randomOrder[1],],
+                  dataPoint=rep(1,length(pred1$z)),
+                  vertical=ztest[randomOrder[1],])
+  data2=data.frame(x=pred2$z,y=pred2$CDE[randomOrder[1],],
+                   dataPoint=rep(1,length(pred2$z)),
+                   vertical=ztest[randomOrder[1],])
+  
+  for(i in 2:9){
+    dataB1=data.frame(x=pred1$z,
+                     y=pred1$CDE[randomOrder[i],],
+                     dataPoint=rep(i,length(pred1$z)),
+                     vertical=ztest[randomOrder[i],])
+    data1=rbind(data1,dataB1)
+    dataB2=data.frame(x=pred2$z,
+                      y=pred2$CDE[randomOrder[i],],
+                      dataPoint=rep(i,length(pred2$z)),
+                      vertical=ztest[randomOrder[i],])
+    data2=rbind(data2,dataB2)
+  }
+```
+```{r}
+g_rf=ggplot() + geom_line(data=data2, aes(x=x, y = y, color="Com narrow-bands"),size=1) +
+geom_line(data=data1, aes(x=x,y=y,color="Sem narrow-bands"),size=1)+
+    geom_vline(data=data1,aes(xintercept=vertical),size=1)+
+    facet_wrap(~ dataPoint)+
+    scale_color_manual(values = c("Com narrow-bands" = "red", "Sem narrow-bands" = "blue"))+
+    labs(color = "")
+print(g_rf)
 ```
 
 
-```{r mod9}
+### Modelo 2.2: Random Forest com filtros _narrow_ e nIMax incrementado
+
+```{r}
 start.time <- Sys.time()
 
 set.seed(47)
-fit9=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
-                zTrain=trainf0['Z'],
-                xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
-                zValidation=validf0['Z'],
-                xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
-                zTest=teste['Z'],
-                nIMax = 15,
-                system='Fourier',
-                regressionFunction = regressionFunction.Forest,
-                regressionFunction.extra = list(nCores=4, ntree=30),
-                chooseDelta = TRUE,
-                chooseSharpen = TRUE,
-                verbose=TRUE)
+fit2=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 55,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=4, ntree=100),
+                 chooseDelta = TRUE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
 
 end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
+time.taken2_2 <- end.time - start.time
+time.taken2_2 # tempo de execução
+```
+
+### Modelo 3: XGBoosting sem filtros _narrow_
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit3=fitFlexCoDE(xTrain=trainf0[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=teste[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.XGBoost,
+                 regressionFunction.extra = list(nCores=4, ninter=500),
+                 chooseDelta = TRUE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken3 <- end.time - start.time
+time.taken3 # tempo de execução
 ```
 
 ```{r}
-print(fit9)
+print(fit3)
+```
+```{r}
+fit3$estimatedRisk
+```
+```{r}
+fit3$bestI
+```
+```{r}
+fit3$bestDelta
+```
+```{r}
+fit3$bestAlpha
+```
+
+### Modelo 4: XGBoosting com filtros _narrow_
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit4=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.XGBoost,
+                 regressionFunction.extra = list(nCores=4, ninter=500),
+                 chooseDelta = TRUE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken4 <- end.time - start.time
+time.taken4 # tempo de execução
 ```
 
 ```{r}
-fit9$bestDelta
-```
-```{r}
-fit9$bestAlpha
-```
-```{r}
-fit9$estimatedRisk
+print(fit4)
 ```
 
+Nota-se que, no caso do regressor XGBoosting, houve menor importância das variáveis _narrow bands_. Além disso, as variáveis W2_MAG e FUVmag tiveram MUITA importância no modelo, ao contrário do Random Forest que tiveram baixíssima importância. O que é estranho, dado que FUVmag tem mais de 70% de dados faltantes.
+
 ```{r}
-# Erros estimados para cada valor de I (número de coeficientes de expansão) usando o conjunto de validação
-fit9$bestError # erro para I=15
+fit4$estimatedRisk
+```
+O modelo com XGBoosting teve maior valor de risco do que o modelo com Random Forest. O erro padrão não teve muita diferença.
+
+```{r}
+fit4$bestI
+```
+```{r}
+fit4$bestDelta
+```
+```{r}
+fit4$bestAlpha
 ```
 
+Vamos comparar a estimativa da densidade condicional de algumas amostras com e sem os filtros _narrow_.
+
+```{r}
+pred3=predict(fit3,xtest1,B=fit3$n_grid,predictionBandProb=FALSE)
+pred4=predict(fit4,xtest2,B=fit4$n_grid,predictionBandProb=FALSE)
+
+randomOrder=sample(1:nrow(xtest1),9,replace=FALSE)
+data3=data.frame(x=pred3$z,y=pred3$CDE[randomOrder[1],],
+                 dataPoint=rep(1,length(pred3$z)),
+                 vertical=ztest[randomOrder[1],])
+data4=data.frame(x=pred4$z,y=pred4$CDE[randomOrder[1],],
+                 dataPoint=rep(1,length(pred4$z)),
+                 vertical=ztest[randomOrder[1],])
+
+for(i in 2:9){
+  dataB3=data.frame(x=pred3$z,
+                    y=pred3$CDE[randomOrder[i],],
+                    dataPoint=rep(i,length(pred3$z)),
+                    vertical=ztest[randomOrder[i],])
+  data3=rbind(data3,dataB3)
+  dataB4=data.frame(x=pred4$z,
+                    y=pred4$CDE[randomOrder[i],],
+                    dataPoint=rep(i,length(pred4$z)),
+                    vertical=ztest[randomOrder[i],])
+  data4=rbind(data4,dataB4)
+}
+```
+```{r}
+g_rf=ggplot() + geom_line(data=data4, aes(x=x, y = y, color="Com narrow-bands"),size=1) +
+geom_line(data=data3, aes(x=x,y=y,color="Sem narrow-bands"),size=1)+
+    geom_vline(data=data3,aes(xintercept=vertical),size=1)+
+    facet_wrap(~ dataPoint)+
+    scale_color_manual(values = c("Com narrow-bands" = "red", "Sem narrow-bands" = "blue"))+
+    labs(color = "")
+print(g_rf)
+```
+### Questões: 
+- O fato do modelo 2 possuir muitos parâmetros não torna o modelo complexo demais? Não corre risco de overfitting?
+- Alterar outros parâmetros? Ex.: base cosine, ntree, niter...?
+- Testar modelos com mais variáveis? Ex.: cores, erros...?
