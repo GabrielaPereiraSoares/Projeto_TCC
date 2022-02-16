@@ -212,16 +212,16 @@ print(g_rf)
 start.time <- Sys.time()
 
 set.seed(47)
-fit2=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+fit2_2=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
                  zTrain=trainf0['Z'],
                  xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
                  zValidation=validf0['Z'],
                  xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
                  zTest=teste['Z'],
-                 nIMax = 55,
+                 nIMax = 100,
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
-                 regressionFunction.extra = list(nCores=4, ntree=100),
+                 regressionFunction.extra = list(nCores=6, ntree=100),
                  chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
@@ -230,6 +230,18 @@ end.time <- Sys.time()
 time.taken2_2 <- end.time - start.time
 time.taken2_2 # tempo de execução
 ```
+```{r}
+fit2_2$estimatedRisk
+```
+```{r}
+fit2_2$bestI
+```
+Acredito que o ganho com a inclusão de tantos coeficientes foi bem pouco quando comparado o risco estimado e o erro padrão com o modelo com 45 coeficientes.
+
+```{r}
+plot_dens(fit2_2,teste[c(paste0(feat,"_iso"),wise,galex)],teste['Z'])
+```
+Não parece ter ficado bom...
 
 ### Modelo 3: XGBoosting sem filtros _narrow_
 
@@ -302,6 +314,10 @@ print(fit4)
 
 Nota-se que, no caso do regressor XGBoosting, houve menor importância das variáveis _narrow bands_. Além disso, as variáveis W2_MAG e FUVmag tiveram MUITA importância no modelo, ao contrário do Random Forest que tiveram baixíssima importância. O que é estranho, dado que FUVmag tem mais de 70% de dados faltantes.
 
+O que me parece é que, de maneira geral, houve uma inversão. Ou seja, as variáveis mais importantes no Random Forest tiver menor importância no XGBoosting.
+
+*Questão:* A importância média mostra quais variáveis foram mais importantes (apareceram mais vezes no regressor) para estimar os coeficientes de expansão? Consequentemente, como os coeficientes estão envolvidos no cálculo da densidade, ele traz informações de quais variáveis são mais importantes para estimação da densidade condicional?
+
 ```{r}
 fit4$estimatedRisk
 ```
@@ -353,6 +369,8 @@ geom_line(data=data3, aes(x=x,y=y,color="Sem narrow-bands"),size=1)+
     labs(color = "")
 print(g_rf)
 ```
+OBS.: Não consegui guardar o tempo, mas o modelo com Random Forest demorou cerca de 1h30min para rodar. Já o modelo com XGBoosting demorou mais de 4hs para rodar, então provavelmente é um modelo que não vale a pena devido também ao seu alto custo computacional.
+
 ### Questões: 
 - O fato do modelo 2 possuir muitos parâmetros não torna o modelo complexo demais? Não corre risco de overfitting?
 - Alterar outros parâmetros? Ex.: base cosine, ntree, niter...?
