@@ -221,7 +221,7 @@ fit2_2=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
                  nIMax = 100,
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
-                 regressionFunction.extra = list(nCores=6, ntree=100),
+                 regressionFunction.extra = list(nCores=6, ntree=100), #ntree=250
                  chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
@@ -239,9 +239,91 @@ fit2_2$bestI
 Acredito que o ganho com a inclusão de tantos coeficientes foi bem pouco quando comparado o risco estimado e o erro padrão com o modelo com 45 coeficientes.
 
 ```{r}
+plot(fit2_2$errors)
+```
+
+
+```{r}
 plot_dens(fit2_2,teste[c(paste0(feat,"_iso"),wise,galex)],teste['Z'])
 ```
 Não parece ter ficado bom...
+
+### Modelo 2.3: Random Forest com filtros _narrow_ e nIMax incrementado
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2_3=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 100,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=6, ntree=250), #ntree=250
+                 chooseDelta = TRUE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2_3 <- end.time - start.time
+time.taken2_3 # tempo de execução
+```
+```{r}
+plot(fit2_3$errors)
+```
+```{r}
+fit2_3$bestI
+```
+```{r}
+fit2_3$estimatedRisk
+```
+```{r}
+plot_dens(fit2_3,teste[c(paste0(feat,"_iso"),wise,galex)],teste['Z'])
+```
+Vamos comparar o modelo com 95 parametros com o modelo de 45 parametros, ambos com narrow bands.
+
+```{r}
+xtest1=teste[c(paste0(feat_broad,"_iso"),wise,galex)]
+ztest=teste['Z']
+```
+```{r}
+  pred1=predict(fit2_3,xtest1,B=fit1$n_grid,predictionBandProb=FALSE)
+  pred2=predict(fit2,xtest1,B=fit2$n_grid,predictionBandProb=FALSE)
+  
+  randomOrder=sample(1:nrow(xtest1),9,replace=FALSE)
+  data1=data.frame(x=pred1$z,y=pred1$CDE[randomOrder[1],],
+                  dataPoint=rep(1,length(pred1$z)),
+                  vertical=ztest[randomOrder[1],])
+  data2=data.frame(x=pred2$z,y=pred2$CDE[randomOrder[1],],
+                   dataPoint=rep(1,length(pred2$z)),
+                   vertical=ztest[randomOrder[1],])
+  
+  for(i in 2:9){
+    dataB1=data.frame(x=pred1$z,
+                     y=pred1$CDE[randomOrder[i],],
+                     dataPoint=rep(i,length(pred1$z)),
+                     vertical=ztest[randomOrder[i],])
+    data1=rbind(data1,dataB1)
+    dataB2=data.frame(x=pred2$z,
+                      y=pred2$CDE[randomOrder[i],],
+                      dataPoint=rep(i,length(pred2$z)),
+                      vertical=ztest[randomOrder[i],])
+    data2=rbind(data2,dataB2)
+  }
+```
+```{r}
+g_rf=ggplot() + geom_line(data=data2, aes(x=x, y = y, color="I=45"),size=1) +
+geom_line(data=data1, aes(x=x,y=y,color="I=95"),size=1)+
+    geom_vline(data=data1,aes(xintercept=vertical),size=1)+
+    facet_wrap(~ dataPoint)+
+    scale_color_manual(values = c("I=45" = "red", "I=95" = "blue"))+
+    labs(color = "")
+print(g_rf)
+```
 
 ### Modelo 3: XGBoosting sem filtros _narrow_
 
