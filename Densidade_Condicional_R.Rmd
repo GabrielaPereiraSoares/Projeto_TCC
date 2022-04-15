@@ -19,12 +19,29 @@ library(FlexCoDE)
 library(ggplot2)
 ```
 
+##### Universidade Federal de São Carlos - UFSCar <br>Centro de Ciências Exatas e Tecnólogicas - CCET
+
+# Trabalho de Graduação A
+### Uma abordagem estatística sobre a estimação de _redshifts_ de quasares usando dados do S-PLUS
+#### Análise preliminar da modelagem de densidade condicional
+
+Discente: Gabriela Pereira Soares
+Orientador: Rafael Izbicki
+Co-orientadora: Lilianne Nakazono
+
+Abril de 2021
+
+_____________________________________________________________________________________________
+
 Vamos carregar os dados já tratados.
 
 ```{r data}
 trainf0=read.csv("~/TCC/trainf0.csv", encoding = "utf8")
 validf0=read.csv("~/TCC/validf0.csv", encoding = "utf8")
 teste=read.csv("~/TCC/teste.csv", encoding = "utf8")
+```
+```{r}
+teste_orig = read.csv("~/TCC/test.csv", encoding = "utf8")
 ```
 
 Vamos também definir novamente as colunas que iremos trabalhar.
@@ -123,6 +140,47 @@ fit1$bestDelta
 ```{r}
 fit1$bestAlpha
 ```
+```{r}
+xtest1=teste[c(paste0(feat_broad,"_iso"),wise,galex)]
+ztest=teste['Z']
+pred1=predict(fit1,xtest1,B=fit1$n_grid,predictionBandProb=FALSE)
+```
+
+```{r}
+# Média das curvas
+meanz_1 = pred1$CDE %*% pred1$z / rowSums(pred1$CDE)
+```
+
+```{r}
+# EQM
+mean((ztest$Z - meanz_1)^2)
+```
+
+```{r}
+set.seed(7)
+randomOrder=sample(1:nrow(xtest1),9,replace=FALSE)
+data1=data.frame(x=pred1$z,y=pred1$CDE[randomOrder[1],],
+                  dataPoint=rep(1,length(pred1$z)),
+                  vertical=ztest[randomOrder[1],],
+                  meanz=meanz_1[randomOrder[1],])
+for(i in 2:9){
+    dataB1=data.frame(x=pred1$z,
+                     y=pred1$CDE[randomOrder[i],],
+                     dataPoint=rep(i,length(pred1$z)),
+                     vertical=ztest[randomOrder[i],],
+                     meanz=meanz_1[randomOrder[i],])
+    data1=rbind(data1,dataB1)
+}
+
+ggplot() + geom_line(data=data1, aes(x=x,y=y,color="Dens."),size=1)+
+    geom_vline(data=data1,aes(xintercept=vertical, color="Zspec"),size=1)+
+    geom_vline(data=data1,aes(xintercept=meanz, color="Média curvas"),size=1)+
+    facet_wrap(~ dataPoint)+
+    scale_color_manual(values = c("Dens." = "red", "Média curvas" = "blue", "Zspec" = "black"))+
+    labs(color = "")
+```
+
+
 ### Modelo 2: Random Forest com filtros _narrow_
 ```{r}
 start.time <- Sys.time()
@@ -158,6 +216,10 @@ fit2$estimatedRisk
 fit2$bestI
 ```
 ```{r}
+fit2$bestError
+```
+
+```{r}
 fit2$bestDelta
 ```
 ```{r}
@@ -174,6 +236,7 @@ ztest=teste['Z']
   pred1=predict(fit1,xtest1,B=fit1$n_grid,predictionBandProb=FALSE)
   pred2=predict(fit2,xtest2,B=fit2$n_grid,predictionBandProb=FALSE)
   
+  set.seed(1)
   randomOrder=sample(1:nrow(xtest1),9,replace=FALSE)
   data1=data.frame(x=pred1$z,y=pred1$CDE[randomOrder[1],],
                   dataPoint=rep(1,length(pred1$z)),
@@ -248,7 +311,8 @@ plot_dens(fit2_2,teste[c(paste0(feat,"_iso"),wise,galex)],teste['Z'])
 ```
 Não parece ter ficado bom...
 
-### Modelo 2.3: Random Forest com filtros _narrow_ e nIMax incrementado
+
+### Modelo 2.3: Random Forest com filtros _narrow_ e ntree incrementado
 
 ```{r}
 start.time <- Sys.time()
@@ -274,10 +338,17 @@ time.taken2_3 # tempo de execução
 ```
 ```{r}
 plot(fit2_3$errors)
+abline(v = c(45, 95), col = c("darkgreen", "blue"), lty = c(1, 2), lwd = c(1, 1))
+abline(h=c(-6.148271,-7.081308), col = c("darkgreen", "blue"), lty = c(1, 2), lwd = c(1, 1))
 ```
 ```{r}
 fit2_3$bestI
 ```
+```{r}
+fit2_3$bestError
+```
+
+
 ```{r}
 fit2_3$estimatedRisk
 ```
@@ -287,11 +358,11 @@ plot_dens(fit2_3,teste[c(paste0(feat,"_iso"),wise,galex)],teste['Z'])
 Vamos comparar o modelo com 95 parametros com o modelo de 45 parametros, ambos com narrow bands.
 
 ```{r}
-xtest1=teste[c(paste0(feat_broad,"_iso"),wise,galex)]
+xtest1=teste[c(paste0(feat,"_iso"),wise,galex)]
 ztest=teste['Z']
 ```
 ```{r}
-  pred1=predict(fit2_3,xtest1,B=fit1$n_grid,predictionBandProb=FALSE)
+  pred1=predict(fit2_3,xtest1,B=fit2_3$n_grid,predictionBandProb=FALSE)
   pred2=predict(fit2,xtest1,B=fit2$n_grid,predictionBandProb=FALSE)
   
   randomOrder=sample(1:nrow(xtest1),9,replace=FALSE)
@@ -316,13 +387,65 @@ ztest=teste['Z']
   }
 ```
 ```{r}
-g_rf=ggplot() + geom_line(data=data2, aes(x=x, y = y, color="I=45"),size=1) +
-geom_line(data=data1, aes(x=x,y=y,color="I=95"),size=1)+
+g_rf=ggplot() + geom_line(data=data2, aes(x=x, y = y, color="I=45"),size=1, alpha=0.5) +
+geom_line(data=data1, aes(x=x,y=y,color="I=95"),size=1, alpha=0.5)+
     geom_vline(data=data1,aes(xintercept=vertical),size=1)+
     facet_wrap(~ dataPoint)+
     scale_color_manual(values = c("I=45" = "red", "I=95" = "blue"))+
     labs(color = "")
 print(g_rf)
+```
+
+As curvas são muito parecidas, não parece ter tido tanto ganho...
+
+```{r}
+xtest1=teste[c(paste0(feat,"_iso"),wise,galex)]
+ztest=teste['Z']
+pred2_3=predict(fit2_3,xtest1,B=fit2_3$n_grid,predictionBandProb=FALSE)
+```
+
+```{r}
+# Média das curvas
+meanz = pred2_3$CDE %*% pred2_3$z / rowSums(pred2_3$CDE)
+```
+
+```{r}
+# EQM
+# 0.2069593 sem narrow
+mean((ztest$Z - meanz)^2)
+```
+```{r}
+set.seed(7)
+randomOrder=sample(1:nrow(xtest1),9,replace=FALSE)
+data2=data.frame(x=pred2_3$z,y=pred2_3$CDE[randomOrder[1],],
+                  dataPoint=rep(1,length(pred2_3$z)),
+                  vertical=ztest[randomOrder[1],],
+                  meanz=meanz[randomOrder[1]])
+for(i in 2:9){
+    dataB2=data.frame(x=pred2_3$z,
+                     y=pred2_3$CDE[randomOrder[i],],
+                     dataPoint=rep(i,length(pred2_3$z)),
+                     vertical=ztest[randomOrder[i],],
+                     meanz=meanz[randomOrder[i]])
+    data2=rbind(data2,dataB2)
+}
+
+ggplot() + geom_line(data=data2, aes(x=x,y=y,color="Dens. narrow"),size=1, alpha = 0.7)+
+    geom_vline(data=data2,aes(xintercept=vertical, color="Zspec"),size=1)+
+    geom_vline(data=data2,aes(xintercept=meanz, color="Média narrow"),size=1, alpha = 0.7)+
+    facet_wrap(~ dataPoint)+
+    scale_color_manual(values = c("Dens. narrow" = "red", "Média narrow" = "blue", "Zspec" = "black"))+
+    labs(color = "")
+```
+
+```{r}
+ggplot() + geom_line(data=data2, aes(x=x,y=y,color="Dens. narrow"),size=1, alpha = 0.7)+
+    geom_vline(data=data2,aes(xintercept=meanz, color="Média narrow"),size=0.5, alpha = 0.7)+
+    geom_line(data=data1, aes(x=x,y=y,color="Dens. broad"),size=1, alpha = 0.7)+
+    geom_vline(data=data1,aes(xintercept=meanz, color="Média broad"),size=0.5, alpha = 0.7)+
+    facet_wrap(~ dataPoint)+
+    scale_color_manual(values = c("Dens. narrow" = "red", "Média narrow" = "darkred", "Dens. broad" = 'blue', "Média broad" = 'darkblue'))+
+    labs(color = "")
 ```
 
 ### Modelo 3: XGBoosting sem filtros _narrow_
@@ -398,7 +521,6 @@ Nota-se que, no caso do regressor XGBoosting, houve menor importância das vari�
 
 O que me parece é que, de maneira geral, houve uma inversão. Ou seja, as variáveis mais importantes no Random Forest tiver menor importância no XGBoosting.
 
-*Questão:* A importância média mostra quais variáveis foram mais importantes (apareceram mais vezes no regressor) para estimar os coeficientes de expansão? Consequentemente, como os coeficientes estão envolvidos no cálculo da densidade, ele traz informações de quais variáveis são mais importantes para estimação da densidade condicional?
 
 ```{r}
 fit4$estimatedRisk
@@ -453,7 +575,236 @@ print(g_rf)
 ```
 OBS.: Não consegui guardar o tempo, mas o modelo com Random Forest demorou cerca de 1h30min para rodar. Já o modelo com XGBoosting demorou mais de 4hs para rodar, então provavelmente é um modelo que não vale a pena devido também ao seu alto custo computacional.
 
-### Questões: 
-- O fato do modelo 2 possuir muitos parâmetros não torna o modelo complexo demais? Não corre risco de overfitting?
-- Alterar outros parâmetros? Ex.: base cosine, ntree, niter...?
-- Testar modelos com mais variáveis? Ex.: cores, erros...?
+#### Calibração do modelo
+
+```{r}
+xtest2=teste[c(paste0(feat,"_iso"),wise,galex)]
+ztest=teste['Z']
+pred2=predict(fit2,xtest2,B=fit2$n_grid,predictionBandProb=FALSE)
+```
+
+```{r}
+xtest1=teste[c(paste0(feat_broad,"_iso"),wise,galex)]
+ztest=teste['Z']
+pred1=predict(fit1,xtest1,B=fit1$n_grid,predictionBandProb=FALSE)
+```
+
+```{r}
+# Instalação do pacote
+# devtools::install_github("tpospisi/cdetools/r")
+library(cdetools)
+```
+
+```{r}
+# Estimação da função de perda
+cde_loss(pred2$CDE, pred2$z, ztest)
+```
+```{r}
+# Calcula a cobertura com base no CDF
+# É para ficar parecido com uma dist. uniforme
+cov=data.frame(x=cdf_coverage(pred2$CDE, pred2$z, ztest$Z))
+cov
+ggplot(cov, aes(x=x)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="royalblue4", alpha=0.7)+
+ geom_density(colour="royalblue4")+
+ theme_light()+
+ labs(x="Cobertura FDC", y="Densidade")
+```
+
+```{r}
+# Cobertura modelo sem narrow
+cov1=data.frame(x=cdf_coverage(pred1$CDE, pred1$z, ztest$Z))
+ggplot(cov1, aes(x=x)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="royalblue4", alpha=0.7)+
+ geom_density(colour="royalblue4")+
+ theme_light()+
+ labs(x="Cobertura FDC", y="Densidade")
+```
+
+Nenhum dos dois modelos parecem ter ficado bom, pois nenhum dos histogramas demonstrou se comportar como uma distribuição uniforme.
+
+#### Modificações
+
+- Problema modelo com narrow: densidade muito concentrada (picos altos) e Zspec fora desse intervalo
+- Solução: tentar deixar a densidade mais "distribuída"
+
+    - fazer sem sharpen/com delta etc...  
+    - fazer com I menor
+    
+- Fazer PIT/loss com uma amostra do teste
+
+```{r}
+library(dplyr)
+set.seed(123)
+amostra_teste = sample_n(teste, 0.6*nrow(teste))
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2_sharp=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=amostra_teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=amostra_teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=4, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2_delt=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=amostra_teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=amostra_teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=4, ntree=100),
+                 chooseDelta = TRUE,
+                 chooseSharpen = FALSE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2_none=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=amostra_teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=amostra_teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=4, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = FALSE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2_I=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=amostra_teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=amostra_teste['Z'],
+                 nIMax = 35,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=4, ntree=150),
+                 chooseDelta = TRUE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+
+```{r}
+fit2_delt$estimatedRisk
+fit2_sharp$estimatedRisk
+fit2_none$estimatedRisk
+fit2_I$estimatedRisk
+fit2$estimatedRisk
+```
+
+```{r}
+xtest2=amostra_teste[c(paste0(feat,"_iso"),wise,galex)]
+ztest=amostra_teste['Z']
+pred2=predict(fit2_sharp,xtest2,B=fit2_sharp$n_grid,predictionBandProb=FALSE)
+```
+```{r}
+# Calcula a cobertura com base no CDF
+# É para ficar parecido com uma dist. uniforme
+cov2.2=data.frame(x=cdf_coverage(pred2$CDE, pred2$z, ztest$Z))
+cov
+ggplot(cov2.2, aes(x=x)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="royalblue4", alpha=0.7)+
+ geom_density(colour="royalblue4")+
+ theme_light()+
+ labs(x="Cobertura FDC", y="Densidade")
+```
+
+```{r}
+xtest2=amostra_teste[c(paste0(feat,"_iso"),wise,galex)]
+ztest=amostra_teste['Z']
+pred2=predict(fit2_I,xtest2,B=fit2_I$n_grid,predictionBandProb=FALSE)
+```
+```{r}
+# Calcula a cobertura com base no CDF
+# É para ficar parecido com uma dist. uniforme
+cov2.2=data.frame(x=cdf_coverage(pred2$CDE, pred2$z, ztest$Z))
+cov
+ggplot(cov2.2, aes(x=x)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="royalblue4", alpha=0.7)+
+ geom_density(colour="royalblue4")+
+ theme_light()+
+ labs(x="Cobertura FDC", y="Densidade")
+```
+
+```{r}
+xtest2=amostra_teste[c(paste0(feat,"_iso"),wise,galex)]
+ztest=amostra_teste['Z']
+pred2=predict(fit2_delt,xtest2,B=fit2_delt$n_grid,predictionBandProb=FALSE)
+```
+```{r}
+# Calcula a cobertura com base no CDF
+# É para ficar parecido com uma dist. uniforme
+cov2.2=data.frame(x=cdf_coverage(pred2$CDE, pred2$z, ztest$Z))
+cov
+ggplot(cov2.2, aes(x=x)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="royalblue4", alpha=0.7)+
+ geom_density(colour="royalblue4")+
+ theme_light()+
+ labs(x="Cobertura FDC", y="Densidade")
+```
+
+```{r}
+xtest2=amostra_teste[c(paste0(feat,"_iso"),wise,galex)]
+ztest=amostra_teste['Z']
+pred2=predict(fit2_none,xtest2,B=fit2_none$n_grid,predictionBandProb=FALSE)
+```
+```{r}
+# Calcula a cobertura com base no CDF
+# É para ficar parecido com uma dist. uniforme
+cov2.2=data.frame(x=cdf_coverage(pred2$CDE, pred2$z, ztest$Z))
+cov
+ggplot(cov2.2, aes(x=x)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="royalblue4", alpha=0.7)+
+ geom_density(colour="royalblue4")+
+ theme_light()+
+ labs(x="Cobertura FDC", y="Densidade")
+```
+
+O modelo escolhendo-se o sharpen e não escolhendo o delta parece ter ficado melhor, em relação à proximidade com a distribuição uniforme.
