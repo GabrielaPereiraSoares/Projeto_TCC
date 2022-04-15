@@ -1,0 +1,746 @@
+---
+title: "Densidade_Condicional_VF"
+author: "Gabriela Pereira Soares"
+date: "29/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libs, include=FALSE, message=FALSE}
+# Instalação do pacote (rodar só 1x)
+#install.packages("devtools")
+#library(devtools)
+#devtools::install_github("rizbicki/FlexCoDE")
+
+library(FlexCoDE)
+library(ggplot2)
+```
+
+##### Universidade Federal de São Carlos - UFSCar <br>Centro de Ciências Exatas e Tecnólogicas - CCET
+
+# Trabalho de Graduação A
+### Uma abordagem estatística sobre a estimação de _redshifts_ de quasares usando dados do S-PLUS
+#### Estudo e modelagem da densidade condicional
+
+Discente: Gabriela Pereira Soares
+Orientador: Rafael Izbicki
+Co-orientadora: Lilianne Nakazono
+
+Abril de 2021
+
+_____________________________________________________________________________________________
+
+Vamos carregar os dados já tratados (do _python_).
+
+```{r data}
+trainf0=read.csv("~/TCC/trainf0.csv", encoding = "utf8")
+validf0=read.csv("~/TCC/validf0.csv", encoding = "utf8")
+trainf1=read.csv("~/TCC/trainf0.csv", encoding = "utf8")
+validf1=read.csv("~/TCC/validf0.csv", encoding = "utf8")
+trainf2=read.csv("~/TCC/trainf0.csv", encoding = "utf8")
+validf2=read.csv("~/TCC/validf0.csv", encoding = "utf8")
+trainf3=read.csv("~/TCC/trainf0.csv", encoding = "utf8")
+validf3=read.csv("~/TCC/validf0.csv", encoding = "utf8")
+trainf4=read.csv("~/TCC/trainf0.csv", encoding = "utf8")
+validf4=read.csv("~/TCC/validf0.csv", encoding = "utf8")
+teste=read.csv("~/TCC/teste.csv", encoding = "utf8")
+```
+
+Vamos também definir novamente as colunas que iremos trabalhar.
+
+```{r cols}
+apers = c("auto", "aper_3", "aper_6", "iso", "petro", "PStotal") # abertura isofótica
+feat_broad = c('U', 'G', 'R', 'I', 'Z') # banda larga
+feat_narrow = c('J0378', 'J0395', 'J0410', 'J0430', 'J0515', 'J0660', 'J0861') # banda estreita
+
+feat = c(feat_broad,feat_narrow)
+splus = c()
+
+for (a in apers){
+  splus = c(splus,paste0(feat,"_",a))}
+
+# Magnitudes
+wise = c("W1_MAG", "W2_MAG")
+galex = c('FUVmag', 'NUVmag')
+
+# Erros
+error_splus = paste0("e_",splus)
+error_wise = paste0("_ERR",wise)
+error_galex = paste0("e_",galex)
+
+# Colunas
+cols = c('index','Z',splus,wise,galex,error_splus,error_wise,error_galex)
+```
+
+# Densidade Condicional: filtros _narrow_ conseguem melhorar as estimativas de p(z)?
+
+Considerando os experimentos anteriores, vamos ajustar o modelo com regressor Random Forest, escolhendo-se o parâmetro sharpen e utilizando delta=0.
+
+### Ajuste modelo sem _narrow bands_.
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit1=fitFlexCoDE(xTrain=trainf0[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=teste[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken1 <- end.time - start.time
+time.taken1 # tempo de execução
+```
+```{r}
+saveRDS(fit1,"fit1.rds")
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit1.1=fitFlexCoDE(xTrain=trainf1[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTrain=trainf1['Z'],
+                 xValidation=validf1[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zValidation=validf1['Z'],
+                 xTest=teste[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken1 <- end.time - start.time
+time.taken1 # tempo de execução
+```
+```{r}
+saveRDS(fit1.1,"fit1_1.rds")
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit1.2=fitFlexCoDE(xTrain=trainf2[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTrain=trainf2['Z'],
+                 xValidation=validf2[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zValidation=validf2['Z'],
+                 xTest=teste[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken1 <- end.time - start.time
+time.taken1 # tempo de execução
+```
+```{r}
+saveRDS(fit1.2,"fit1_2.rds")
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit1.3=fitFlexCoDE(xTrain=trainf3[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTrain=trainf3['Z'],
+                 xValidation=validf3[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zValidation=validf3['Z'],
+                 xTest=teste[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken1 <- end.time - start.time
+time.taken1 # tempo de execução
+```
+```{r}
+saveRDS(fit1.3,"fit1_3.rds")
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit1.4=fitFlexCoDE(xTrain=trainf4[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTrain=trainf4['Z'],
+                 xValidation=validf4[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zValidation=validf4['Z'],
+                 xTest=teste[c(paste0(feat_broad,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken1 <- end.time - start.time
+time.taken1 # tempo de execução
+```
+```{r}
+saveRDS(fit1.4,"fit1_4.rds")
+```
+
+Hiperparâmetros:
+
+```{r}
+c(fit1$bestI, fit1.1$bestI, fit1.2$bestI, fit1.3$bestI, fit1.4$bestI)
+```
+
+```{r}
+c(fit1$bestAlpha, fit1.1$bestAlpha, fit1.2$bestAlpha, fit1.3$bestAlpha, fit1.4$bestAlpha)
+```
+
+### Ajuste modelo com _narrow bands_.
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2=fitFlexCoDE(xTrain=trainf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf0['Z'],
+                 xValidation=validf0[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf0['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=4, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+```{r}
+saveRDS(fit2,"fit2.rds")
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2.1=fitFlexCoDE(xTrain=trainf1[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf1['Z'],
+                 xValidation=validf1[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf1['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+```{r}
+saveRDS(fit2.1,"fit2_1.rds")
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2.2=fitFlexCoDE(xTrain=trainf2[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf2['Z'],
+                 xValidation=validf2[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf2['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+```{r}
+saveRDS(fit2.2,"fit2_2.rds")
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2.3=fitFlexCoDE(xTrain=trainf3[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf3['Z'],
+                 xValidation=validf3[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf3['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+```{r}
+saveRDS(fit2.3,"fit2_3.rds")
+```
+
+```{r}
+start.time <- Sys.time()
+
+set.seed(47)
+fit2.4=fitFlexCoDE(xTrain=trainf4[c(paste0(feat,"_iso"),wise,galex)],
+                 zTrain=trainf4['Z'],
+                 xValidation=validf4[c(paste0(feat,"_iso"),wise,galex)],
+                 zValidation=validf4['Z'],
+                 xTest=teste[c(paste0(feat,"_iso"),wise,galex)],
+                 zTest=teste['Z'],
+                 nIMax = 45,
+                 system='Fourier',
+                 regressionFunction = regressionFunction.Forest,
+                 regressionFunction.extra = list(nCores=5, ntree=100),
+                 chooseDelta = FALSE,
+                 chooseSharpen = TRUE,
+                 verbose=TRUE)
+
+end.time <- Sys.time()
+time.taken2 <- end.time - start.time
+time.taken2 # tempo de execução
+```
+```{r}
+saveRDS(fit2.4,"fit2_4.rds")
+```
+
+Hiperparâmetros:
+
+```{r}
+c(fit2$bestI, fit2.1$bestI, fit2.2$bestI, fit2.3$bestI, fit2.4$bestI)
+```
+
+```{r}
+c(fit2$bestAlpha, fit2.1$bestAlpha, fit2.2$bestAlpha, fit2.3$bestAlpha, fit2.4$bestAlpha)
+```
+
+## Importância das variáveis
+
+```{r}
+importance1=print(fit1)$data
+ggplot(importance1, aes(x=as.factor(covariate),y=frequency)) + 
+ geom_bar(position="dodge",stat="identity", colour="white", fill="royalblue4", alpha=0.7)+
+coord_flip()+
+ theme_light()+
+ labs(y="Importância Média", x="Covariável")+
+ scale_x_discrete(labels=row.names(importance1))
+```
+
+```{r}
+importance2=print(fit2)$data
+ggplot(importance2, aes(x=as.factor(covariate),y=frequency)) + 
+ geom_bar(position="dodge",stat="identity", colour="white", fill="royalblue4", alpha=0.7)+
+coord_flip()+
+ theme_light()+
+ labs(y="Importância Média", x="Covariável")+
+ scale_x_discrete(labels=c("W1_MAG","J0378_iso","u_iso","J0660_iso","i_iso","J0430_iso",
+                           "r_iso","J0515_iso","J0410_iso","J0395_iso","z_iso","g_iso",
+                           "J0861_iso","W2_MAG","NUVmag","FUVmag"))
+```
+
+## Performance dos modelos na amostra de teste
+
+```{r}
+xtest1=teste[c(paste0(feat_broad,"_iso"),wise,galex)]
+xtest2=teste[c(paste0(feat,"_iso"),wise,galex)]
+ztest=teste['Z']
+```
+```{r}
+colnames(xtest1)
+```
+
+```{r}
+riscos_broad = list(fit1$estimatedRisk, fit1.1$estimatedRisk, fit1.2$estimatedRisk, fit1.3$estimatedRisk, fit1.4$estimatedRisk)
+riscos_narrow = list(fit2$estimatedRisk, fit2.1$estimatedRisk, fit2.2$estimatedRisk, fit2.3$estimatedRisk, fit2.4$estimatedRisk)
+
+riscos_broad
+riscos_narrow
+```
+
+```{r}
+pred2=predict(fit2,xtest2,B=fit2$n_grid,predictionBandProb=FALSE)
+pred2.1=predict(fit2.1,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
+pred2.2=predict(fit2.2,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
+pred2.3=predict(fit2.3,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
+pred2.4=predict(fit2.4,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
+
+pred1=predict(fit1,xtest1,B=fit1$n_grid,predictionBandProb=FALSE)
+pred1.1=predict(fit1.1,xtest1,B=fit1.1$n_grid,predictionBandProb=FALSE)
+pred1.2=predict(fit1.2,xtest1,B=fit1.1$n_grid,predictionBandProb=FALSE)
+pred1.3=predict(fit1.3,xtest1,B=fit1.1$n_grid,predictionBandProb=FALSE)
+pred1.4=predict(fit1.4,xtest1,B=fit1.1$n_grid,predictionBandProb=FALSE)
+```
+
+```{r}
+pred_mean_broad = list(z=(pred1$z+pred1.1$z+pred1.2$z+pred1.3$z+pred1.4$z)/5,
+                       CDE=(pred1$CDE+pred1.1$CDE+pred1.2$CDE+pred1.3$CDE+pred1.4$CDE)/5)
+pred_mean_narrow = list(z=(pred2$z+pred2.1$z+pred2.2$z+pred2.3$z+pred2.4$z)/5,
+                       CDE=(pred2$CDE+pred2.1$CDE+pred2.2$CDE+pred2.3$CDE+pred2.4$CDE)/5)
+```
+
+```{r}
+saveRDS(pred_mean_broad,"pred_mean_broad.rds")
+saveRDS(pred_mean_narrow,"pred_mean_narrow.rds")
+```
+
+```{r}
+# Instalação do pacote
+# devtools::install_github("tpospisi/cdetools/r")
+library(cdetools)
+# Estimação da função de perda
+cde_loss(pred_mean_broad$CDE, pred_mean_broad$z, ztest)
+cde_loss(pred_mean_narrow$CDE, pred_mean_narrow$z, ztest)
+```
+
+Gráfico PIT sem _narrow_:
+
+```{r}
+# Cobertura modelo sem narrow
+cov1.1=data.frame(x=cdf_coverage(pred_mean_broad$CDE, pred_mean_broad$z, ztest$Z))
+ggplot(cov1.1, aes(x=x)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="royalblue4", alpha=0.7)+
+ geom_density(colour="royalblue4")+
+ theme_light()+
+ labs(x="Cobertura FDC", y="Densidade")
+```
+
+```{r}
+# P-P Plot
+library('qqplotr')
+# Sem narrow-band
+ggplot(data = cov1.1, mapping = aes(sample = x)) +
+    stat_pp_band(distribution = "unif", dparams = list(min=0, max=1)) +
+    stat_pp_line(colour="black") +
+    stat_pp_point(distribution = "unif", colour="royalblue4", alpha=0.5, size=0.5, dparams = list(min=0, max=1)) +
+    theme_light()+
+    labs(x = "Pontos de probabilidade da Uniforme", y = "Probabilidades cumulativas da amostra")
+```
+
+Gráfico PIT com _narrow_:
+
+```{r}
+# Calcula a cobertura com base no CDF
+# É para ficar parecido com uma dist. uniforme
+# min 0 e max 1 
+cov2.2=data.frame(x=cdf_coverage(pred_mean_narrow$CDE, pred_mean_narrow$z, ztest$Z))
+ggplot(cov2.2, aes(x=x)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="royalblue4", alpha=0.7)+
+ geom_density(colour="royalblue4")+
+ theme_light()+
+ labs(x="Cobertura FDC", y="Densidade")
+```
+
+```{r}
+# Com narrow-band
+ggplot(data = cov2.2, mapping = aes(sample = x)) +
+    stat_pp_band(distribution = "unif", dparams = list(min=0, max=1)) +
+    stat_pp_line(colour="black") +
+    stat_pp_point(distribution = "unif", colour="royalblue4", alpha=0.5, size=0.5, dparams = list(min=0, max=1)) +
+    theme_light()+
+    labs(x = "Pontos de probabilidade da Uniforme", y = "Probabilidades cumulativas da amostra")
+```
+
+```{r}
+# Teste KS para uniformidade
+# H0: Segue distribuição uniforme
+# H1: Não segue distribuição uniforme
+ks.test(cov2.2$x, "punif", 0, 1) # com narrow (rejeita H0)
+ks.test(cov1.1$x, "punif", 0, 1) # sem narrow (não rejeita H0)
+```
+
+
+## Estimação pontual: Média das Curvas
+
+```{r}
+# Média das curvas
+meanz_1.1 = pred_mean_broad$CDE %*% pred_mean_broad$z / rowSums(pred_mean_broad$CDE)
+meanz2.2 = pred_mean_narrow$CDE %*% pred_mean_narrow$z / rowSums(pred_mean_narrow$CDE)
+```
+
+```{r}
+# EQM
+mean((ztest$Z - meanz_1.1)^2)
+mean((ztest$Z - meanz2.2)^2)
+```
+
+```{r}
+# RMSE
+sqrt(mean((ztest$Z - meanz_1.1)^2))
+sqrt(mean((ztest$Z - meanz2.2)^2))
+```
+
+```{r}
+# NMAD
+1.48*median(abs(meanz_1.1-ztest$Z - median(meanz_1.1-ztest$Z)) / (1+ztest$Z))
+1.48*median(abs(meanz2.2-ztest$Z - median(meanz2.2-ztest$Z)) / (1+ztest$Z))
+```
+
+#### Comparação estimação pontual vs densidade
+
+Sem _narrow-band_:
+
+```{r}
+set.seed(7)
+randomOrder=sample(1:nrow(xtest1),12,replace=FALSE)
+data1.1=data.frame(x=pred_mean_broad$z,y=pred_mean_broad$CDE[randomOrder[1],],
+                  dataPoint=rep(1,length(pred_mean_broad$z)),
+                  vertical=ztest[randomOrder[1],],
+                  meanz=meanz_1.1[randomOrder[1],])
+for(i in 2:12){
+    dataB1.1=data.frame(x=pred_mean_broad$z,
+                     y=pred_mean_broad$CDE[randomOrder[i],],
+                     dataPoint=rep(i,length(pred_mean_broad$z)),
+                     vertical=ztest[randomOrder[i],],
+                     meanz=meanz_1.1[randomOrder[i],])
+    data1.1=rbind(data1.1,dataB1.1)
+}
+
+ggplot(data=data1.1, aes(x=x,y=y)) + 
+    geom_line(size=0.7, alpha=0.7, aes(color="CDE"))+
+    facet_wrap(~ dataPoint)+
+    geom_vline(aes(xintercept=vertical),size=0.7, linetype="dashed", alpha=0.7,color="black")+
+    geom_vline(aes(xintercept=meanz),size=0.7, alpha=0.7, color="red3")+
+    theme_light()+
+    theme(strip.background = element_rect(fill="white"),
+          strip.text.x = element_text(size=9, color="black"),
+          legend.position="right")+
+    scale_color_manual(values = c("Zspec"="black","Média"="red3","CDE"="blue3"),
+                       name="")+
+    labs(x="Z",y="Densidade condicional estimada")
+```
+
+Com _narrow-band_:
+
+```{r}
+set.seed(7)
+randomOrder=sample(1:nrow(xtest2),12,replace=FALSE)
+data2.2=data.frame(x=pred_mean_narrow$z,y=pred_mean_narrow$CDE[randomOrder[1],],
+                  dataPoint=rep(1,length(pred_mean_narrow$z)),
+                  vertical=ztest[randomOrder[1],],
+                  meanz=meanz2.2[randomOrder[1],])
+for(i in 2:12){
+    dataB2.2=data.frame(x=pred_mean_narrow$z,
+                     y=pred_mean_narrow$CDE[randomOrder[i],],
+                     dataPoint=rep(i,length(pred_mean_narrow$z)),
+                     vertical=ztest[randomOrder[i],],
+                     meanz=meanz2.2[randomOrder[i],])
+    data2.2=rbind(data2.2,dataB2.2)
+}
+
+ggplot(data=data2.2, aes(x=x,y=y)) + 
+    geom_line(size=0.7, alpha=0.7, aes(color="CDE"))+
+    facet_wrap(~ dataPoint)+
+    geom_vline(aes(xintercept=vertical),size=0.7, linetype="dashed", alpha=0.7,color="black")+
+    geom_vline(aes(xintercept=meanz),size=0.7, alpha=0.7, color="red3")+
+    theme_light()+
+    theme(strip.background = element_rect(fill="white"),
+          strip.text.x = element_text(size=9, color="black"),
+          legend.position="right")+
+    scale_color_manual(values = c("Zspec"="black","Média"="red3","CDE"="blue3"),
+                       name="")+
+    labs(x="Z",y="Densidade condicional estimada")
+```
+
+## Modelo final: Comparação densidade com _narrow_ e sem _narrow_
+
+Comparação dos dois modelos:
+ 
+```{r}
+dados_tudo = cbind(rbind(data1.1,data2.2),Modelo=c(rep("Sem narrow",12000),rep("Com narrow",12000)))
+```
+ 
+```{r}
+ggplot(data=data2.2, aes(x=x,y=y)) + 
+    geom_line(size=0.7, alpha=0.7, color="red3")+
+    geom_line(data=data1.1, aes(x=x,y=y, color="Sem narrow"),size=0.7, alpha=0.7)+
+    facet_wrap(~ dataPoint)+
+    geom_vline(aes(xintercept=vertical),size=0.7, linetype="dashed", alpha=0.7,color="black")+
+    theme_light()+
+    theme(strip.background = element_rect(fill="white"),
+          strip.text.x = element_text(size=9, color="black"),
+          legend.position="top")+
+    scale_color_manual(values = c("Zspec"="black","Com narrow"="red3","Sem narrow"="blue3"),
+                       name="")+
+    labs(x="Z",y="Densidade condicional estimada")
+```
+
+```{r}
+ggplot(data=dados_tudo, aes(x=x,y=y)) + 
+    geom_line(aes(color = Modelo),size=0.7, alpha=0.7)+
+    geom_vline(aes(xintercept=meanz,color = Modelo),size=0.5, alpha=0.7)+
+    theme_light()+
+    theme(strip.background = element_rect(fill="white"),
+          strip.text.x = element_text(size=9, color="black"),
+          legend.position="top")+
+    facet_wrap(~ dataPoint)+
+    scale_color_manual(values = c("red3","blue3"))+
+    labs(x="Z",y="Densidade condicional estimada")
+```
+
+```{r}
+preds = cbind(mean = rbind(meanz_1.1,meanz2.2),
+              zspec = rbind(teste["Z"],teste["Z"]),
+              modelo=c(rep("Sem narrow",6840),rep("Com narrow",6840)))
+```
+
+```{r}
+ggplot(data=preds, aes(x=mean,y=Z)) + 
+  geom_point(size=1)+
+  geom_abline(color="blue3", size=1)+
+  theme_light()+
+  labs(y="Zspec", x="Zmean")+
+  theme(strip.background = element_rect(fill="white"),
+          strip.text.x = element_text(size=9, color="black"))+
+  facet_wrap(~ modelo)
+```
+
+
+# global test - python
+# armazenar conjunto teste e coverage
+# p-valor : se alto, passa
+
+# sem narrow: validar com narrow no conjunto de teste
+
+```{r}
+library(reticulate)
+```
+
+```{python}
+import numpy as np
+import pandas as pd
+import cde_diagnostics
+from cdetools.cdf_coverage import cdf_coverage
+import cdetools
+import nnkcde
+from scipy.stats import norm, multivariate_normal
+import matplotlib.pyplot as plt
+from matplotlib.ticker import NullFormatter
+import seaborn as sns
+from cde_diagnostics.global_test import global_test
+from cde_diagnostics.local_pp_plot import local_pp_plot
+```
+```{r}
+cde_broad = pred_mean_broad$CDE
+cde_narrow = pred_mean_narrow$CDE
+z_grid = pred_mean_broad$z
+y_test = ztest$Z
+cov1_1 = cov1.1
+cov2_2 = cov2.2
+```
+
+```{python}
+# PIT values
+z_grid = np.array(r.z_grid)
+y_test = np.array(r.y_test)
+x_test1 = r.xtest1.to_numpy()
+x_test2 = r.xtest2.to_numpy()
+pit_broad = r.cov1_1
+pit_broad2 = pit_broad.to_numpy().reshape((6840,))
+pit_narrow = r.cov2_2
+pit_narrow2 = pit_narrow.to_numpy().reshape((6840,))
+
+pit_values_broad = 1 - cdf_coverage(r.cde_broad, z_grid, y_test)
+pit_values_narrow = 1 - cdf_coverage(r.cde_narrow, z_grid, y_test)
+```
+
+```{python}
+from scipy.stats import binom
+from matplotlib import pyplot as plt
+import numpy as np
+```
+
+```{python}
+def plot_band(values, ci_level=0.95, x_label='PIT values', n_bins=30, figsize=(10,4), ylim=[0, 50]):
+  n = values.shape[0]
+  ci_quantity = (1-ci_level)/2
+  low_lim = binom.ppf(q=ci_quantity, n=n, p=1/n_bins)
+  upp_lim = binom.ppf(q=ci_level + ci_quantity, n=n, p=1/n_bins)
+  fig = plt.figure(figsize=figsize)
+  plt.hist(values, bins=n_bins)
+  plt.axhline(y=low_lim, color='grey')
+  plt.axhline(y=upp_lim, color='grey')
+  plt.axhline(y=n/n_bins, label='Uniform Average', color='red')
+  plt.fill_between(x=np.linspace(0, 1, 100),
+                   y1=np.repeat(low_lim, 100),
+                   y2=np.repeat(upp_lim, 100),
+                  color='grey', alpha=0.2)
+  plt.legend(loc='best', prop={'size': 18})
+  plt.xlabel(x_label, size=20)
+  plt.ylim(ylim)
+  plt.xticks(size=16)
+  plt.yticks(size=16)
+  plt.close()
+  return fig
+```
+
+Gráfico PIT
+
+```{python}
+fig_pit_broad = plot_band(values=pit_values_broad, ci_level=0.95, x_label='PIT values for $\widehat f_1$', n_bins=30, ylim=[0, 350])
+fig_pit_broad.savefig('pit_broad.png',bbox_inches='tight')
+```
+
+```{python}
+fig_pit_broad_r = plot_band(values=pit_broad2, ci_level=0.95, x_label='PIT values for $\widehat f_1$', n_bins=30, ylim=[0, 350])
+fig_pit_broad_r.savefig('pit_broad_r.png',bbox_inches='tight')
+```
+
+```{python}
+fig_pit_narrow = plot_band(values=pit_values_narrow, ci_level=0.95, x_label='PIT values for $\widehat f_2$', n_bins=30, ylim=[0, 350])
+fig_pit_narrow.savefig('pit_narrow.png',bbox_inches='tight')
+```
+
+```{python}
+fig_pit_narrow_r = plot_band(values=pit_narrow2, ci_level=0.95, x_label='PIT values for $\widehat f_2$', n_bins=30, ylim=[0, 350])
+fig_pit_narrow_r.savefig('pit_narrow_r.png',bbox_inches='tight')
+```
+
