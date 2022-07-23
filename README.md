@@ -20,4 +20,4 @@ O código refere-se à versão final da modelagem com os resultados publicados n
 Neste Jupyter Notebook construímos o histograma para os _pit values_. A visualização desejada não pôde ser realizada no programa R, por isso encontra-se separada da modelagem.
 
 ## Densidade Condicional no R - Colors
-O script apresenta a construção da modelagem e visões gráfica usando as covariáveis de _colors_ na abertura PStotal.
+O script apresenta a construção da modelagem e visões gráficas usando as covariáveis de _colors_ na abertura PStotal.
