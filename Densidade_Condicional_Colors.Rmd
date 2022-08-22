@@ -1,7 +1,7 @@
 ---
 title: "Densidade_Condicional_VF"
 author: "Gabriela Pereira Soares"
-date: "29/03/2022"
+date: "01/10/2022"
 output: html_document
 ---
 
@@ -10,13 +10,21 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r libs, include=FALSE, message=FALSE}
-# Instalação do pacote (rodar só 1x)
+# Instalação do pacote devtools
 #install.packages("devtools")
 #library(devtools)
 
+# Instalação do pacote cdetools
+# devtools::install_github("tpospisi/cdetools/r")
+
+library(cdetools)
 library(FlexCoDE)
 library(ggplot2)
+library(qqplotr)
+library(comprehenr)
 ```
+
+---
 
 ##### Universidade Federal de São Carlos - UFSCar <br>Centro de Ciências Exatas e Tecnólogicas - CCET
 
@@ -28,55 +36,36 @@ Discente: Gabriela Pereira Soares
 Orientador: Rafael Izbicki
 Co-orientadora: Lilianne Nakazono
 
-Maio de 2021
+Outubro de 2022
 
-_____________________________________________________________________________________________
+---
 
 Vamos carregar os dados já tratados (do _python_).
 
 ```{r data}
-trainf0=read.csv("~/trainf0.csv", encoding = "utf8")
-validf0=read.csv("~/validf0.csv", encoding = "utf8")
-trainf1=read.csv("~/trainf0.csv", encoding = "utf8")
-validf1=read.csv("~/validf0.csv", encoding = "utf8")
-trainf2=read.csv("~/trainf0.csv", encoding = "utf8")
-validf2=read.csv("~/validf0.csv", encoding = "utf8")
-trainf3=read.csv("~/trainf0.csv", encoding = "utf8")
-validf3=read.csv("~/validf0.csv", encoding = "utf8")
-trainf4=read.csv("~/trainf0.csv", encoding = "utf8")
-validf4=read.csv("~/validf0.csv", encoding = "utf8")
+# Treino
+trainf0=read.csv("trainf0.csv", encoding = "utf8")
+trainf1=read.csv("trainf1.csv", encoding = "utf8")
+trainf2=read.csv("trainf2.csv", encoding = "utf8")
+trainf3=read.csv("trainf3.csv", encoding = "utf8")
+trainf4=read.csv("trainf4.csv", encoding = "utf8")
+
+# Validação
+validf0=read.csv("validf0.csv", encoding = "utf8")
+validf1=read.csv("validf1.csv", encoding = "utf8")
+validf2=read.csv("validf2.csv", encoding = "utf8")
+validf3=read.csv("validf3.csv", encoding = "utf8")
+validf4=read.csv("validf4.csv", encoding = "utf8")
+
+# Teste
 teste=read.csv("teste.csv", encoding = "utf8")
 ```
 
-Vamos também definir novamente as colunas que iremos trabalhar.
+Vamos também definir as colunas que iremos trabalhar.
 
-```{r cols}
-apers = c("PStotal") # abertura isofótica
-feat_broad = c('U', 'G', 'R', 'I', 'Z') # banda larga
-feat_narrow = c('J0378', 'J0395', 'J0410', 'J0430', 'J0515', 'J0660', 'J0861') # banda estreita
-
-feat = c(feat_broad,feat_narrow)
-splus = c()
-
-for (a in apers){
-  splus = c(splus,paste0(feat,"_",a))}
-
-# Magnitudes
-wise = c("W1_MAG", "W2_MAG")
-galex = c('FUVmag', 'NUVmag')
-
-# Erros
-error_splus = paste0("e_",splus)
-error_wise = paste0("_ERR",wise)
-error_galex = paste0("e_",galex)
-
-# Colunas
-cols = c('index','Z',splus,wise,galex,error_splus,error_wise,error_galex)
-```
-
-Colors:
 ```{r}
-colors_tudo = names(teste)[seq(21,35)]
+# Cores
+colors_tudo = names(teste)[seq(37,51)]
 ```
 ```{r}
 colors_broad = c("u_PStotal.r_PStotal","g_PStotal.r_PStotal",
@@ -90,11 +79,11 @@ colors_galex = c("FUVmag.r_PStotal","NUVmag.r_PStotal")
 ```
 
 
-# Densidade Condicional: filtros _narrow_ conseguem melhorar as estimativas de p(z)?
+# Densidade condicional usando FlexCode
 
-Considerando os experimentos anteriores, vamos ajustar o modelo com regressor Random Forest, escolhendo-se o parâmetro sharpen e utilizando delta=0.
+Considerando os experimentos anteriores, vamos ajustar o modelo com regressor Random Forest, base de Fourier e escolhendo-se o parâmetro sharpen e delta.
 
-### Ajuste modelo sem _narrow bands_.
+## Ajuste do modelo sem _narrow bands_.
 
 ```{r}
 start.time <- Sys.time()
@@ -110,7 +99,7 @@ fit1=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -136,7 +125,7 @@ fit1.1=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -162,7 +151,7 @@ fit1.2=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -188,7 +177,7 @@ fit1.3=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -214,7 +203,7 @@ fit1.4=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -224,6 +213,15 @@ time.taken1 # tempo de execução
 ```
 ```{r}
 saveRDS(fit1.4,"fit1_4.rds")
+```
+
+```{r}
+# Carregando os modelos já treinados
+fit1   = readRDS("fit1.rds")
+fit1.1 = readRDS("fit1_1.rds")
+fit1.2 = readRDS("fit1_2.rds")
+fit1.3 = readRDS("fit1_3.rds")
+fit1.4 = readRDS("fit1_4.rds")
 ```
 
 Hiperparâmetros:
@@ -236,7 +234,11 @@ c(fit1$bestI, fit1.1$bestI, fit1.2$bestI, fit1.3$bestI, fit1.4$bestI)
 c(fit1$bestAlpha, fit1.1$bestAlpha, fit1.2$bestAlpha, fit1.3$bestAlpha, fit1.4$bestAlpha)
 ```
 
-### Ajuste modelo com _narrow bands_.
+```{r}
+c(fit1$bestDelta, fit1.1$bestDelta, fit1.2$bestDelta, fit1.3$bestDelta, fit1.4$bestDelta)
+```
+
+## Ajuste do modelo com _narrow bands_.
 
 ```{r}
 start.time <- Sys.time()
@@ -252,7 +254,7 @@ fit2=fitFlexCoDE(xTrain=trainf0[colors_tudo],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -278,7 +280,7 @@ fit2.1=fitFlexCoDE(xTrain=trainf0[colors_tudo],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -304,7 +306,7 @@ fit2.2=fitFlexCoDE(xTrain=trainf0[colors_tudo],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -330,7 +332,7 @@ fit2.3=fitFlexCoDE(xTrain=trainf0[colors_tudo],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -356,7 +358,7 @@ fit2.4=fitFlexCoDE(xTrain=trainf0[colors_tudo],
                  system='Fourier',
                  regressionFunction = regressionFunction.Forest,
                  regressionFunction.extra = list(nCores=5, ntree=100),
-                 chooseDelta = FALSE,
+                 chooseDelta = TRUE,
                  chooseSharpen = TRUE,
                  verbose=TRUE)
 
@@ -366,6 +368,15 @@ time.taken2 # tempo de execução
 ```
 ```{r}
 saveRDS(fit2.4,"fit2_4.rds")
+```
+
+```{r}
+# Carregando os modelos já treinados
+fit2   = readRDS("fit2.rds")
+fit2.1 = readRDS("fit2_1.rds")
+fit2.2 = readRDS("fit2_2.rds")
+fit2.3 = readRDS("fit2_3.rds")
+fit2.4 = readRDS("fit2_4.rds")
 ```
 
 Hiperparâmetros:
@@ -378,18 +389,13 @@ c(fit2$bestI, fit2.1$bestI, fit2.2$bestI, fit2.3$bestI, fit2.4$bestI)
 c(fit2$bestAlpha, fit2.1$bestAlpha, fit2.2$bestAlpha, fit2.3$bestAlpha, fit2.4$bestAlpha)
 ```
 
-## Importância das variáveis
+```{r}
+c(fit2$bestDelta, fit2.1$bestDelta, fit2.2$bestDelta, fit2.3$bestDelta, fit2.4$bestDelta)
+```
+### Importância das variáveis
 
 ```{r}
-importance1=print(fit1)$data
-ggplot(importance1, aes(x=as.factor(covariate),y=frequency)) + 
- geom_bar(position="dodge",stat="identity", colour="white", fill="royalblue4", alpha=0.7)+
-coord_flip()+
- theme_light()+
- labs(y="Importância Média", x="Covariável")+
- scale_x_discrete(labels=row.names(importance1))
-```
-```{r}
+# Usando o modelo 1
 importance2=print(fit2)$data
 ggplot(importance2, aes(x=as.factor(covariate),y=frequency)) + 
  geom_bar(position="dodge",stat="identity", colour="white", fill="#0072B2", alpha=0.7)+
@@ -399,51 +405,49 @@ coord_flip()+
   theme(plot.title=element_text(hjust=0.5))+
  scale_x_discrete(labels=gsub("_PStotal","",gsub("\\."," - ",row.names(importance2))))
 ```
+## Predições no conjunto de teste
 
 ```{r}
-#importance2=print(fit2)$data
-#ggplot(importance2, aes(x=as.factor(covariate),y=frequency)) + 
-# geom_bar(position="dodge",stat="identity", colour="white", fill="royalblue4", alpha=0.7)+
-#coord_flip()+
-# theme_light()+
-# labs(y="Importância Média", x="Covariável")
-# scale_x_discrete(labels=c("W1_MAG","J0378_iso","u_iso","J0660_iso","i_iso","J0430_iso",
-                         #  "r_iso","J0515_iso","J0410_iso","J0395_iso","z_iso","g_iso",
-                         #  "J0861_iso","W2_MAG","NUVmag","FUVmag"))
-```
-
-```{r}
+# Covariáveis de teste
 xtest1=teste[c(colors_broad,colors_galex, colors_wise)]
 xtest2=teste[colors_tudo]
-ztest=teste['Z']
-```
-```{r}
-colnames(xtest1)
+ztest=teste["Z"]
 ```
 
 ```{r}
+# Loss e erro padrão de cada modelo
 riscos_broad = list(fit1$estimatedRisk, fit1.1$estimatedRisk, fit1.2$estimatedRisk, fit1.3$estimatedRisk, fit1.4$estimatedRisk)
-riscos_narrow = list(fit2$estimatedRisk, fit2.1$estimatedRisk, fit2.2$estimatedRisk, fit2.3$estimatedRisk, fit2.4$estimatedRisk)
 
 riscos_broad
+```
+
+```{r}
+riscos_narrow = list(fit2$estimatedRisk, fit2.1$estimatedRisk, fit2.2$estimatedRisk, fit2.3$estimatedRisk, fit2.4$estimatedRisk)
+
 riscos_narrow
 ```
 
-```{r}
-pred2=predict(fit2,xtest2,B=fit2$n_grid,predictionBandProb=FALSE)
-pred2.1=predict(fit2.1,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
-pred2.2=predict(fit2.2,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
-pred2.3=predict(fit2.3,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
-pred2.4=predict(fit2.4,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
 
+```{r}
+# Predição de cada modelo
+
+# Sem narrow
 pred1=predict(fit1,xtest1,B=fit1$n_grid,predictionBandProb=FALSE)
 pred1.1=predict(fit1.1,xtest1,B=fit1.1$n_grid,predictionBandProb=FALSE)
 pred1.2=predict(fit1.2,xtest1,B=fit1.1$n_grid,predictionBandProb=FALSE)
 pred1.3=predict(fit1.3,xtest1,B=fit1.1$n_grid,predictionBandProb=FALSE)
 pred1.4=predict(fit1.4,xtest1,B=fit1.1$n_grid,predictionBandProb=FALSE)
+
+# Com narrow
+pred2=predict(fit2,xtest2,B=fit2$n_grid,predictionBandProb=FALSE)
+pred2.1=predict(fit2.1,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
+pred2.2=predict(fit2.2,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
+pred2.3=predict(fit2.3,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
+pred2.4=predict(fit2.4,xtest2,B=fit2.1$n_grid,predictionBandProb=FALSE)
 ```
 
 ```{r}
+# Predição média
 pred_mean_broad = list(z=(pred1$z+pred1.1$z+pred1.2$z+pred1.3$z+pred1.4$z)/5,CDE=(pred1$CDE+pred1.1$CDE+pred1.2$CDE+pred1.3$CDE+pred1.4$CDE)/5)
 
 pred_mean_narrow = list(z=(pred2$z+pred2.1$z+pred2.2$z+pred2.3$z+pred2.4$z)/5,CDE=(pred2$CDE+pred2.1$CDE+pred2.2$CDE+pred2.3$CDE+pred2.4$CDE)/5)
@@ -454,14 +458,150 @@ saveRDS(pred_mean_broad,"pred_mean_broad.rds")
 saveRDS(pred_mean_narrow,"pred_mean_narrow.rds")
 ```
 
+# Análise dos resultados
+
 ```{r}
-# Instalação do pacote
-# devtools::install_github("tpospisi/cdetools/r")
-library(cdetools)
+# Carregando as predições médias
+pred_mean_broad = readRDS("pred_mean_broad.rds")
+pred_mean_narrow = readRDS("pred_mean_narrow.rds")
+```
+
+```{r}
 # Estimação da função de perda
 cde_loss(pred_mean_broad$CDE, pred_mean_broad$z, ztest)
 cde_loss(pred_mean_narrow$CDE, pred_mean_narrow$z, ztest)
 ```
+
+Comparação das densidades com e sem _narrow_:
+
+```{r}
+# Definindo as amostras
+qr = quantile(teste$r_PStotal, probs=c(0.25,0.75))
+
+amostras = c(5040,2693,772,1789,7790,8003,4909,1215,7682,5178,4581,692)
+r = c(rep("20 > r",4),rep('20 < r < 21.3',4),rep('21.3 < r',4))
+r = factor(r, levels = c("20 > r",'20 < r < 21.3','21.3 < r'))
+z = rep(c('0.5 > z','0.5 < z < 3.5','3.5 < z < 5','5 < z'),3)
+z = factor(z, levels = c('0.5 > z','0.5 < z < 3.5','3.5 < z < 5','5 < z'))
+posy = c(rep(6,4),rep(3,4),rep(2.5,4))
+
+randomOrder = amostras
+
+# Dataframe com as amostras
+data1.1=data.frame(x=pred_mean_broad$z,y=pred_mean_broad$CDE[randomOrder[1],],
+                   dataPoint=paste('Amostra',1),
+                   r = r[1], z = z[1],
+                   vertical=teste$Z[randomOrder[1]])
+
+data2.1=data.frame(x=pred_mean_narrow$z,y=pred_mean_narrow$CDE[randomOrder[1],],
+                   dataPoint=paste('Amostra',1),
+                   r = r[1], z = z[1],
+                   vertical=teste$Z[randomOrder[1]],
+                   r_PStotal = teste$r_PStotal[randomOrder[1]],
+                   posy = posy[1])
+
+for(i in 2:12){
+  dataB1.1=data.frame(x=pred_mean_broad$z,y=pred_mean_broad$CDE[randomOrder[i],],
+                   dataPoint=paste('Amostra',i),
+                   r = r[i], z = z[i],
+                   vertical=teste$Z[randomOrder[i]])
+  
+  data1.1=rbind(data1.1,dataB1.1)
+  
+  dataB2.1=data.frame(x=pred_mean_narrow$z,y=pred_mean_narrow$CDE[randomOrder[i],],
+                   dataPoint=paste('Amostra',i),
+                   r = r[i], z = z[i],
+                   vertical=teste$Z[randomOrder[i]],
+                   r_PStotal = teste$r_PStotal[randomOrder[i]],
+                   posy = posy[i])
+  
+  data2.1=rbind(data2.1,dataB2.1)
+}
+```
+
+
+```{r}
+# Gráfico com as densidades
+ggplot(data=data2.1, aes(x=x,y=y)) + 
+  geom_line(size=0.5, alpha=1, color="#D55E00")+
+  geom_line(data=data1.1, aes(x=x,y=y, color="Without narrow bands"),size=0.5, alpha=1)+
+  facet_grid(r ~ z, scales = "free")+
+  geom_vline(aes(xintercept=vertical),size=0.5, linetype="dashed", alpha=0.7,color="black")+
+  geom_label(aes(x=5.6,y=posy, label=dataPoint), size=2)+
+  theme_light()+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 8))+
+  theme(strip.background = element_rect(fill="white"),
+        strip.text.x = element_text(size=9, color="black"),
+        strip.text.y = element_text(size=9, color="black"),
+        legend.position="top", panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        plot.title=element_text(hjust=0.5))+
+  scale_color_manual(values = c('zspec'="black","With narrow bands"="#D55E00",
+                                "Without narrow bands"="#0072B2"), name="",
+                     labels = c(expression(z[spec]), 'Com narrow bands', 
+                     'Sem narrow bands'))+
+  labs(x=expression(z),y=expression(p(z)), title='Densidades condicionais estimadas usando FlexCode')
+```
+```{r}
+# Valores da banda r_PStotal e de Z nas amostras
+round(teste[amostras,]$RA_1,3)
+round(teste[amostras,]$DEC_1,3)
+round(teste[amostras,]$r_PStotal,3)
+round(teste[amostras,]$Z,3)
+round(meanz_1.1[amostras],3)
+round(meanz2.2[amostras],3)
+```
+
+
+Estimativas pontuais:
+
+```{r}
+# Média das curvas
+meanz_1.1 = pred_mean_broad$CDE %*% pred_mean_broad$z / rowSums(pred_mean_broad$CDE)
+meanz2.2 = pred_mean_narrow$CDE %*% pred_mean_narrow$z / rowSums(pred_mean_narrow$CDE)
+```
+
+```{r}
+# EQM
+mean((ztest$Z - meanz_1.1)^2)
+mean((ztest$Z - meanz2.2)^2)
+```
+
+```{r}
+# RMSE
+sqrt(mean((ztest$Z - meanz_1.1)^2))
+sqrt(mean((ztest$Z - meanz2.2)^2))
+```
+
+```{r}
+# NMAD
+1.48*median(abs(meanz_1.1-ztest$Z - median(meanz_1.1-ztest$Z)) / (1+ztest$Z))
+1.48*median(abs(meanz2.2-ztest$Z - median(meanz2.2-ztest$Z)) / (1+ztest$Z))
+```
+
+Comparação das estimativas pontuais:
+
+```{r}
+preds = cbind(mean = rbind(meanz_1.1,meanz2.2),
+              zspec = rbind(teste["Z"],teste["Z"]),
+              modelo=c(rep("Sem narrow",8172),rep("Com narrow",8172)))
+```
+
+```{r}
+cbbPalette <- c('#D55E00','#E69F00','#F0E442')
+ggplot(data=preds, aes(x=mean,y=Z)) + 
+  geom_point(size=1, color='#D55E00')+
+  stat_density_2d(aes(fill = stat(level)), geom = "polygon", binwidth=0.05)+
+  geom_abline(color="#0072B2", size=1)+
+  scale_fill_gradientn(colours = cbbPalette)+
+  theme_light()+
+  labs(y=expression(z[spec]), x=expression(z[mean]), title='Superfícies de densidade para as estimativas pontuais do FlexCode')+
+  theme(strip.background = element_rect(fill="white"),
+          strip.text.x = element_text(size=9, color="black"),
+        plot.title=element_text(hjust=0.5))+
+  facet_wrap(~ modelo)
+```
+## Análise de diagnóstico
 
 Gráfico PIT sem _narrow_:
 
@@ -475,10 +615,8 @@ ggplot(cov1.1, aes(x=x)) +
   theme(plot.title=element_text(hjust=0.5))+
  labs(x="Cobertura da FDA", y="Densidade", title="Distribuição dos PIT values - Modelo com narrow bands")
 ```
-
 ```{r}
 # P-P Plot
-library('qqplotr')
 # Sem narrow-band
 ggplot(data = cov1.1, mapping = aes(sample = x)) +
     stat_pp_band(distribution = "unif", dparams = list(min=0, max=1)) +
@@ -517,8 +655,8 @@ ggplot(data = cov2.2, mapping = aes(sample = x)) +
          title="PP-Plot dos PIT values - Modelo com as narrow bands")
 ```
 ```{r}
-write.csv(cov1.1, "pit_broad_R_ps.csv")
-write.csv(cov2.2, "pit_narrow_R_ps.csv")
+write.csv(cov1.1, "pit_broad_flx.csv")
+write.csv(cov2.2, "pit_narrow_flx.csv")
 ```
 
 ```{r}
@@ -530,189 +668,10 @@ ks.test(cov2.2$x, "punif", 0, 1) # com narrow
 ks.test(cov1.1$x, "punif", 0, 1) # sem narrow 
 ```
 
-
-## Estimação pontual: Média das Curvas
-
-```{r}
-# Média das curvas
-meanz_1.1 = pred_mean_broad$CDE %*% pred_mean_broad$z / rowSums(pred_mean_broad$CDE)
-meanz2.2 = pred_mean_narrow$CDE %*% pred_mean_narrow$z / rowSums(pred_mean_narrow$CDE)
-```
-
-```{r}
-# EQM
-mean((ztest$Z - meanz_1.1)^2)
-mean((ztest$Z - meanz2.2)^2)
-```
-
-```{r}
-# RMSE
-sqrt(mean((ztest$Z - meanz_1.1)^2))
-sqrt(mean((ztest$Z - meanz2.2)^2))
-```
-
-```{r}
-# NMAD
-1.48*median(abs(meanz_1.1-ztest$Z - median(meanz_1.1-ztest$Z)) / (1+ztest$Z))
-1.48*median(abs(meanz2.2-ztest$Z - median(meanz2.2-ztest$Z)) / (1+ztest$Z))
-```
-
-#### Comparação estimação pontual vs densidade
-
-Sem _narrow-band_:
-
-```{r}
-set.seed(7)
-randomOrder=sample(1:nrow(xtest1),12,replace=FALSE)
-data1.1=data.frame(x=pred_mean_broad$z,y=pred_mean_broad$CDE[randomOrder[1],],
-                  dataPoint=rep(1,length(pred_mean_broad$z)),
-                  vertical=ztest[randomOrder[1],],
-                  meanz=meanz_1.1[randomOrder[1],])
-for(i in 2:12){
-    dataB1.1=data.frame(x=pred_mean_broad$z,
-                     y=pred_mean_broad$CDE[randomOrder[i],],
-                     dataPoint=rep(i,length(pred_mean_broad$z)),
-                     vertical=ztest[randomOrder[i],],
-                     meanz=meanz_1.1[randomOrder[i],])
-    data1.1=rbind(data1.1,dataB1.1)
-}
-
-ggplot(data=data1.1, aes(x=x,y=y)) + 
-    geom_line(size=0.7, alpha=0.7, aes(color="CDE"))+
-    facet_wrap(~ dataPoint)+
-    geom_vline(aes(xintercept=vertical),size=0.7, linetype="dashed", alpha=0.7,color="black")+
-    geom_vline(aes(xintercept=meanz),size=0.7, alpha=0.7, color="red3")+
-    theme_light()+
-    theme(strip.background = element_rect(fill="white"),
-          strip.text.x = element_text(size=9, color="black"),
-          legend.position="right")+
-    scale_color_manual(values = c("Zspec"="black","Média"="red3","CDE"="blue3"),
-                       name="")+
-    labs(x="Z",y="Densidade condicional estimada")
-```
-
-Com _narrow-band_:
-
-```{r}
-set.seed(7)
-randomOrder=sample(1:nrow(xtest2),12,replace=FALSE)
-data2.2=data.frame(x=pred_mean_narrow$z,y=pred_mean_narrow$CDE[randomOrder[1],],
-                  dataPoint=rep(1,length(pred_mean_narrow$z)),
-                  vertical=ztest[randomOrder[1],],
-                  meanz=meanz2.2[randomOrder[1],])
-for(i in 2:12){
-    dataB2.2=data.frame(x=pred_mean_narrow$z,
-                     y=pred_mean_narrow$CDE[randomOrder[i],],
-                     dataPoint=rep(i,length(pred_mean_narrow$z)),
-                     vertical=ztest[randomOrder[i],],
-                     meanz=meanz2.2[randomOrder[i],])
-    data2.2=rbind(data2.2,dataB2.2)
-}
-
-ggplot(data=data2.2, aes(x=x,y=y)) + 
-    geom_line(size=0.7, alpha=0.7, aes(color="CDE"))+
-    facet_wrap(~ dataPoint)+
-    geom_vline(aes(xintercept=vertical),size=0.7, linetype="dashed", alpha=0.7,color="black")+
-    geom_vline(aes(xintercept=meanz),size=0.7, alpha=0.7, color="red3")+
-    theme_light()+
-    theme(strip.background = element_rect(fill="white"),
-          strip.text.x = element_text(size=9, color="black"),
-          legend.position="right")+
-    scale_color_manual(values = c("Zspec"="black","Média"="red3","CDE"="blue3"),
-                       name="")+
-    labs(x="Z",y="Densidade condicional estimada")
-```
-
-## Modelo final: Comparação densidade com _narrow_ e sem _narrow_
-
-Comparação dos dois modelos:
- 
-```{r}
-dados_tudo = cbind(rbind(data1.1,data2.2),Modelo=c(rep("Sem narrow",12000),rep("Com narrow",12000)))
-```
- 
-```{r}
-ggplot(data=data2.2, aes(x=x,y=y)) + 
-    geom_line(size=0.7, alpha=0.7, color="red3")+
-    geom_line(data=data1.1, aes(x=x,y=y, color="Sem narrow"),size=0.7, alpha=0.7)+
-    facet_wrap(~ dataPoint)+
-    geom_vline(aes(xintercept=vertical),size=0.7, linetype="dashed", alpha=0.7,color="black")+
-    theme_light()+
-    theme(strip.background = element_rect(fill="white"),
-          strip.text.x = element_text(size=9, color="black"),
-          legend.position="top")+
-    scale_color_manual(values = c("Zspec"="black","Com narrow"="red3","Sem narrow"="blue3"),
-                       name="")+
-    labs(x="Z",y="Densidade condicional estimada")
-```
-```{r}
-qr = quantile(teste$r_PStotal, probs=c(0.25,0.75))
-
-amostras = c(5040,2693,772,1789,7790,8003,4909,1215,7682,5178,4581,692)
-r = c(rep("20 > r",4),rep('20 < r < 21.3',4),rep('21.3 < r',4))
-r = factor(r, levels = c("20 > r",'20 < r < 21.3','21.3 < r'))
-z = rep(c('0.5 > z','0.5 < z < 3.5','3.5 < z < 5','5 < z'),3)
-z = factor(z, levels = c('0.5 > z','0.5 < z < 3.5','3.5 < z < 5','5 < z'))
-posy = c(rep(6,4),rep(3,4),rep(2.5,4))
-
-randomOrder = amostras
-
-data1.1=data.frame(x=pred_mean_broad$z,y=pred_mean_broad$CDE[randomOrder[1],],
-                   dataPoint=paste(paste("RA",round(teste[randomOrder[1],]$RA,3)),
-                             paste("DEC",round(teste[randomOrder[1],]$DEC,3)),sep="\n"),
-                   r = r[1], z = z[1],
-                   vertical=teste$Z[randomOrder[1]])
-
-data2.1=data.frame(x=pred_mean_narrow$z,y=pred_mean_narrow$CDE[randomOrder[1],],
-                   dataPoint=paste(paste("RA",round(teste[randomOrder[1],]$RA,3)),
-                             paste("DEC",round(teste[randomOrder[1],]$DEC,3)),sep="\n"),
-                   r = r[1], z = z[1],
-                   vertical=teste$Z[randomOrder[1]],
-                   r_PStotal = teste$r_PStotal[randomOrder[1]],
-                   posy = posy[1])
-for(i in 2:12){
-  dataB1.1=data.frame(x=pred_mean_broad$z,y=pred_mean_broad$CDE[randomOrder[i],],
-                   dataPoint=paste(paste("RA",round(teste[randomOrder[i],]$RA,3)),
-                             paste("DEC",round(teste[randomOrder[i],]$DEC,3)),sep="\n"),
-                   r = r[i], z = z[i],
-                   vertical=teste$Z[randomOrder[i]])
-  
-  data1.1=rbind(data1.1,dataB1.1)
-  
-  dataB2.1=data.frame(x=pred_mean_narrow$z,y=pred_mean_narrow$CDE[randomOrder[i],],
-                   dataPoint=paste(paste("RA",round(teste[randomOrder[i],]$RA,3)),
-                             paste("DEC",round(teste[randomOrder[i],]$DEC,3)),sep="\n"),
-                   r = r[i], z = z[i],
-                   vertical=teste$Z[randomOrder[i]],
-                   r_PStotal = teste$r_PStotal[randomOrder[i]],
-                   posy = posy[i])
-  
-  data2.1=rbind(data2.1,dataB2.1)
-}
-
-ggplot(data=data2.1, aes(x=x,y=y)) + 
-  geom_line(size=0.4, alpha=1, color="#D55E00")+
-  geom_line(data=data1.1, aes(x=x,y=y, color="Without narrow bands"),size=0.4, alpha=1)+
-  facet_grid(r ~ z, scales = "free")+
-  geom_vline(aes(xintercept=vertical),size=0.4, linetype="dashed", alpha=0.7,color="black")+
-  geom_label(aes(x=5.6,y=posy, label=dataPoint), size=2)+
-  theme_light()+
-  scale_x_continuous(breaks = scales::pretty_breaks(n = 8))+
-  theme(strip.background = element_rect(fill="white"),
-        strip.text.x = element_text(size=9, color="black"),
-        strip.text.y = element_text(size=9, color="black"),
-        legend.position="top", panel.grid.major.y = element_blank(),
-        panel.grid.minor.y = element_blank() )+
-  scale_color_manual(values = c("zspec"="black","With narrow bands"="#D55E00",
-                                "Without narrow bands"="#0072B2"), name="")+
-  labs(x=expression(z),y=expression(p(z)))
-```
+Odds:
 
 ```{r}
 # Odds
-
-library(comprehenr)
-
 odds = function(z_grid, pred){
   # Obtém o valor de z tal que a densidade é máxima para cada obs
   z_max = to_vec(for(i in apply(pred,1,which.max)) z_grid[i])
@@ -733,30 +692,318 @@ odds = function(z_grid, pred){
   return(odds)
 }
 ```
+
 ```{r}
 odds_broad = odds(pred_mean_broad$z, pred_mean_broad$CDE)
 mean(odds_broad); sd(odds_broad)/sqrt(length(teste$Z))
-hist(odds_broad)
 
 odds_narrow = odds(pred_mean_narrow$z, pred_mean_narrow$CDE)
 mean(odds_narrow); sd(odds_narrow)/sqrt(length(teste$Z))
-hist(odds_narrow)
 ```
 
 ```{r}
-preds = cbind(mean = rbind(meanz_1.1,meanz2.2),
-              zspec = rbind(teste["Z"],teste["Z"]),
+df_odds = data.frame(broad = odds_broad, narrow = odds_narrow)
+
+ggplot(df_odds, aes(x=broad)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="#0072B2", alpha=0.7)+
+ geom_density(colour="#0072B2")+
+ theme_light()+
+ theme(plot.title=element_text(hjust=0.5))+
+ labs(x="Odds", y="Densidade", title="Distribuição da odds - Modelo sem narrow bands")
+```
+
+```{r}
+ggplot(df_odds, aes(x=narrow)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="#0072B2", alpha=0.7)+
+ geom_density(colour="#0072B2")+
+ theme_light()+
+ theme(plot.title=element_text(hjust=0.5))+
+ labs(x="Odds", y="Densidade", title="Distribuição da odds - Modelo com narrow bands")
+```
+
+# Modelo com Redes Neurais
+
+```{r}
+# Carregando os dados
+colors_broad = read.csv("colors-B-PStotal.csv")
+colors_narrow = read.csv("colors-BN-PStotal.csv")
+```
+
+```{r}
+grid_z = pred_mean_broad$z
+```
+
+```{r}
+pdf_broad = colors_broad[c('PDF_Weights','PDF_Means','PDF_STDs')]
+pdf_narrow = colors_narrow[c('PDF_Weights','PDF_Means','PDF_STDs')]
+```
+
+```{r}
+# Dividindo os valores em colunas
+
+# Broad
+pdf_weights_b = do.call("rbind", strsplit(pdf_broad$PDF_Weights, ","))
+pdf_weights_b = data.frame(apply(pdf_weights_b, 2, as.numeric))
+names(pdf_weights_b) = paste("W", 1:7, sep = "")
+
+pdf_mean_b = do.call("rbind", strsplit(pdf_broad$PDF_Means, ","))
+pdf_mean_b = data.frame(apply(pdf_mean_b, 2, as.numeric))
+names(pdf_mean_b) = paste("m", 1:7, sep = "")
+
+pdf_std_b = do.call("rbind", strsplit(pdf_broad$PDF_STDs, ","))
+pdf_std_b = data.frame(apply(pdf_std_b, 2, as.numeric))
+names(pdf_std_b) = paste("sd", 1:7, sep = "")
+
+# Narrow
+pdf_weights_n = do.call("rbind", strsplit(pdf_narrow$PDF_Weights, ","))
+pdf_weights_n = data.frame(apply(pdf_weights_n, 2, as.numeric))
+names(pdf_weights_n) = paste("W", 1:7, sep = "")
+
+pdf_mean_n = do.call("rbind", strsplit(pdf_narrow$PDF_Means, ","))
+pdf_mean_n = data.frame(apply(pdf_mean_n, 2, as.numeric))
+names(pdf_mean_n) = paste("m", 1:7, sep = "")
+
+pdf_std_n = do.call("rbind", strsplit(pdf_narrow$PDF_STDs, ","))
+pdf_std_n = data.frame(apply(pdf_std_n, 2, as.numeric))
+names(pdf_std_n) = paste("sd", 1:7, sep = "")
+```
+
+```{r}
+# Calculando a densidade
+calcula_dens = function(grid_z, mean, std, w){
+  dens = list()
+  for(i in 1:nrow(mean)){
+    dens_l = list()
+    for(j in 1:7){
+      dens_l[[j]] = dnorm(grid_z, mean=mean[i,j], sd=std[i,j])*w[i,j]
+    }
+    soma = Reduce("+", dens_l)
+    dens[[i]] = soma
+  }
+  return(dens)
+}
+
+dens_broad = calcula_dens(grid_z, pdf_mean_b, pdf_std_b, pdf_weights_b)
+dens_narrow = calcula_dens(grid_z, pdf_mean_n, pdf_std_n, pdf_weights_n)
+```
+
+```{r}
+# Convertendo para matriz
+dens_matrix_b = matrix(unlist(dens_broad), ncol = 1000, nrow = 8172, byrow=TRUE)
+dens_matrix_n = matrix(unlist(dens_narrow), ncol = 1000, nrow = 8172, byrow=TRUE)
+```
+
+```{r}
+# Loss e erro padrão
+cde_loss(dens_matrix_b, grid_z, colors_broad$z)
+cde_loss(dens_matrix_n, grid_z, colors_narrow$z)
+```
+
+Gráfico de densidade condicional (comparação com e sem narrow):
+
+```{r}
+posy = c(rep(6,4),rep(2,4),rep(1.3,4))
+
+data1.1=data.frame(x=grid_z,y=dens_matrix_b[randomOrder[1],],
+                   dataPoint=paste('Amostra', 1),
+                   r = r[1], z = z[1],
+                   vertical=colors_broad$z[randomOrder[1]])
+
+data2.1=data.frame(x=grid_z,y=dens_matrix_n[randomOrder[1],],
+                   dataPoint=paste('Amostra', 1),
+                   r = r[1], z = z[1],
+                   vertical=colors_narrow$z[randomOrder[1]],
+                   r_PStotal = colors_narrow$r_PStotal[randomOrder[1]],
+                   posy = posy[1])
+for(i in 2:12){
+  dataB1.1=data.frame(x=grid_z,y=dens_matrix_b[randomOrder[i],],
+                      dataPoint=paste('Amostra', i),
+                      r = r[i], z = z[i],
+                      vertical=colors_broad$z[randomOrder[i]])
+  
+  data1.1=rbind(data1.1,dataB1.1)
+  
+  dataB2.1=data.frame(x=grid_z,y=dens_matrix_n[randomOrder[i],],
+                      dataPoint=paste('Amostra', i),
+                      r = r[i], z = z[i],
+                      vertical=colors_narrow$z[randomOrder[i]],
+                      r_PStotal = colors_narrow$r_PStotal[randomOrder[i]],
+                      posy = posy[i])
+  
+  data2.1=rbind(data2.1,dataB2.1)
+}
+```
+
+```{r}
+ggplot(data=data2.1, aes(x=x,y=y)) + 
+  geom_line(size=0.5, alpha=1, color="#D55E00")+
+  geom_line(data=data1.1, aes(x=x,y=y, color="Without narrow bands"),size=0.5, alpha=1)+
+  facet_grid(r ~ z, scales = "free")+
+  geom_vline(aes(xintercept=vertical),size=0.5, linetype="dashed", alpha=0.7,color="black")+
+  geom_label(aes(x=5.6,y=posy, label=dataPoint), size=2)+
+  theme_light()+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 8))+
+  theme(strip.background = element_rect(fill="white"),
+        strip.text.x = element_text(size=9, color="black"),
+        strip.text.y = element_text(size=9, color="black"),
+        legend.position="top", panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank() )+
+  scale_color_manual(values = c('zspec'="black","With narrow bands"="#D55E00",
+                                "Without narrow bands"="#0072B2"), name="",
+                     labels = c(expression(z[spec]), 'Com narrow bands', 
+                     'Sem narrow bands'))+
+  labs(x=expression(z),y=expression(p(z)), title='Densidades condicionais estimadas usando Redes Neurais')
+```
+
+```{r}
+# Valores da banda r_PStotal e de Z nas amostras
+round(colors_narrow[amostras,]$RA,3)
+round(colors_narrow[amostras,]$DEC,3)
+round(colors_narrow[amostras,]$r_PStotal,3)
+round(colors_narrow[amostras,]$z,3)
+round(colors_broad[amostras,]$zml,3)
+round(colors_narrow[amostras,]$zml,3)
+```
+
+
+Estimativas pontuais:
+
+```{r}
+# EQM
+mean((colors_broad$zml - colors_broad$z)^2)
+mean((colors_narrow$zml - colors_narrow$z)^2)
+```
+
+```{r}
+# RMSE
+sqrt(mean((colors_broad$zml - colors_broad$z)^2))
+sqrt(mean((colors_narrow$zml - colors_narrow$z)^2))
+```
+
+```{r}
+# NMAD
+1.48*median(abs(colors_broad$zml - colors_broad$z - 
+            median(colors_broad$zml - colors_broad$z)) / (1+colors_broad$z))
+1.48*median(abs(colors_narrow$zml - colors_narrow$z - 
+            median(colors_narrow$zml - colors_narrow$z)) / (1+colors_narrow$z))
+```
+
+Comparação estimações pontuais com e sem narrow:
+
+```{r}
+preds = data.frame(mean = c(colors_broad$zml,colors_narrow$zml),
+              zspec = c(colors_broad$z,colors_narrow$z),
               modelo=c(rep("Sem narrow",8172),rep("Com narrow",8172)))
 ```
 
 ```{r}
-ggplot(data=preds, aes(x=mean,y=Z)) + 
-  geom_point(size=1)+
-  geom_abline(color="blue3", size=1)+
+cbbPalette <- c('#D55E00','#E69F00','#F0E442')
+ggplot(data=preds, aes(x=mean,y=zspec)) + 
+  geom_point(size=1, color='#D55E00')+
+  stat_density_2d(aes(fill = stat(level)), geom = "polygon", binwidth=0.05)+
+  geom_abline(color="#0072B2", size=1)+
+  scale_fill_gradientn(colours = cbbPalette)+
   theme_light()+
-  labs(y="Zspec", x="Zmean")+
+  labs(y=expression(z[spec]), x=expression(z[mean]), title='Superfícies de densidade para as estimativas pontuais da Rede Neural')+
   theme(strip.background = element_rect(fill="white"),
-          strip.text.x = element_text(size=9, color="black"))+
+          strip.text.x = element_text(size=9, color="black"),
+        plot.title=element_text(hjust=0.5))+
   facet_wrap(~ modelo)
+```
+
+PIT values:
+
+```{r}
+# Cobertura modelo sem narrow
+ggplot(colors_broad, aes(x=PIT)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="#0072B2", alpha=0.7)+
+ geom_density(colour="#0072B2")+
+ theme_light()+
+  theme(plot.title=element_text(hjust=0.5))+
+ labs(x="Cobertura da FDA", y="Densidade", title="Distribuição dos PIT values - Rede Neural com narrow bands")
+```
+
+```{r}
+# P-P Plot
+# Sem narrow-band
+ggplot(data = colors_broad, mapping = aes(sample = PIT)) +
+    stat_pp_band(distribution = "unif", dparams = list(min=0, max=1)) +
+    stat_pp_line(colour="black", size=0.9) +
+    stat_pp_point(distribution = "unif", colour="#0072B2", alpha=0.5, size=0.5, dparams = list(min=0, max=1)) +
+    theme_light()+
+  theme(plot.title=element_text(hjust=0.5))+
+    labs(x = "Distribuição Cumulativa da Uniforme", y = "Distribuição cumulativa da Amostra",
+         title="PP-Plot dos PIT values - Rede Neural sem as narrow bands")
+```
+
+Gráfico PIT com _narrow_:
+
+```{r}
+# Calcula a cobertura com base no CDF
+# É para ficar parecido com uma dist. uniforme
+# min 0 e max 1 
+ggplot(colors_narrow, aes(x=PIT)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="#0072B2", alpha=0.7)+
+ geom_density(colour="#0072B2")+
+ theme_light()+
+ theme(plot.title=element_text(hjust=0.5))+
+ labs(x="Cobertura da FDA", y="Densidade", title="Distribuição dos PIT values - Rede Neural sem narrow bands")
+```
+
+```{r}
+# Com narrow-band
+ggplot(data = colors_narrow, mapping = aes(sample = PIT)) +
+    stat_pp_band(distribution = "unif", dparams = list(min=0, max=1)) +
+    stat_pp_line(colour="black", size=0.9) +
+    stat_pp_point(distribution = "unif", colour="#0072B2", alpha=0.5, size=0.5, dparams = list(min=0, max=1)) +
+    theme_light()+
+  theme(plot.title=element_text(hjust=0.5))+
+    labs(x = "Distribuição Cumulativa da Uniforme", y = "Distribuição Cumulativa da Amostra",
+         title="PP-Plot dos PIT values - Rede Neural com as narrow bands")
+```
+
+```{r}
+# Teste KS para uniformidade
+# H0: Segue distribuição uniforme
+# H1: Não segue distribuição uniforme
+library(nortest)
+ks.test(colors_narrow$PIT, "punif", 0, 1) # com narrow
+ks.test(colors_broad$PIT, "punif", 0, 1) # sem narrow 
+```
+
+
+Odds: 
+
+```{r}
+odds_b_nn = colors_broad$Odds/(1-colors_broad$Odds)
+odds_n_nn = colors_narrow$Odds/(1-colors_narrow$Odds)
+
+df_odds = data.frame(odds_b_nn, odds_n_nn)
+
+mean(odds_b_nn); sd(odds_b_nn)/sqrt(length(odds_b_nn))
+
+mean(odds_n_nn); sd(odds_n_nn)/sqrt(length(odds_n_nn))
+```
+
+```{r}
+ggplot(df_odds, aes(x=odds_b_nn)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="#0072B2", alpha=0.7)+
+ geom_density(colour="#0072B2")+
+ theme_light()+
+ theme(plot.title=element_text(hjust=0.5))+
+ labs(x="Odds", y="Densidade", title="Distribuição da odds - Rede Neural sem narrow bands")
+```
+
+```{r}
+ggplot(df_odds, aes(x=odds_n_nn)) + 
+ geom_histogram(aes(y=..density..), colour="white", fill="#0072B2", alpha=0.7)+
+ geom_density(colour="#0072B2")+
+ theme_light()+
+ theme(plot.title=element_text(hjust=0.5))+
+ labs(x="Odds", y="Densidade", title="Distribuição da odds - Rede Neural com narrow bands")
+```
+```{r}
+write.csv(colors_broad$PIT, "pit_broad_nn.csv")
+write.csv(colors_narrow$PIT, "pit_narrow_nn.csv")
 ```
 
