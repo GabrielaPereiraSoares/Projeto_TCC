@@ -5,7 +5,7 @@ Este repositório é destinado ao versionamento e organização dos códigos des
 A análise descritiva foi realizada a fim de explorar o comportamento dos dados e das principais variáveis, buscando extrair informações iniciais. Além disso, a tratativa dos valores faltantes e a criação das _colors_ foi realizada neste notebook.
 
 ## Dados
-Arquivo compactado com os dados utilizados em cada _fold_ para treinamento e validação do modelo, e os dados de teste.
+Arquivo compactado com os dados utilizados para treinamento, validação e teste do modelo.
 
 ## Densidade Condicional no R - Colors
 O script apresenta a construção da modelagem e visões gráficas usando as covariáveis de _colors_ na abertura PStotal.
