@@ -15,7 +15,10 @@ knitr::opts_chunk$set(echo = TRUE)
 #library(devtools)
 
 # Instalação do pacote cdetools
-# devtools::install_github("tpospisi/cdetools/r")
+#devtools::install_github("tpospisi/cdetools/r")
+
+# Instalação do pacote FlexCoDE
+#devtools::install_github("rizbicki/FlexCoDE")
 
 library(cdetools)
 library(FlexCoDE)
@@ -115,10 +118,10 @@ saveRDS(fit1,"fit1.rds")
 start.time <- Sys.time()
 
 set.seed(47)
-fit1.1=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
-                 zTrain=trainf0['Z'],
-                 xValidation=validf0[c(colors_broad,colors_galex,colors_wise)],
-                 zValidation=validf0['Z'],
+fit1.1=fitFlexCoDE(xTrain=trainf1[c(colors_broad,colors_galex,colors_wise)],
+                 zTrain=trainf1['Z'],
+                 xValidation=validf1[c(colors_broad,colors_galex,colors_wise)],
+                 zValidation=validf1['Z'],
                  xTest=teste[c(colors_broad,colors_galex,colors_wise)],
                  zTest=teste['Z'],
                  nIMax = 45,
@@ -141,10 +144,10 @@ saveRDS(fit1.1,"fit1_1.rds")
 start.time <- Sys.time()
 
 set.seed(47)
-fit1.2=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
-                 zTrain=trainf0['Z'],
-                 xValidation=validf0[c(colors_broad,colors_galex,colors_wise)],
-                 zValidation=validf0['Z'],
+fit1.2=fitFlexCoDE(xTrain=trainf2[c(colors_broad,colors_galex,colors_wise)],
+                 zTrain=trainf2['Z'],
+                 xValidation=validf2[c(colors_broad,colors_galex,colors_wise)],
+                 zValidation=validf2['Z'],
                  xTest=teste[c(colors_broad,colors_galex,colors_wise)],
                  zTest=teste['Z'],
                  nIMax = 45,
@@ -167,10 +170,10 @@ saveRDS(fit1.2,"fit1_2.rds")
 start.time <- Sys.time()
 
 set.seed(47)
-fit1.3=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
-                 zTrain=trainf0['Z'],
-                 xValidation=validf0[c(colors_broad,colors_galex,colors_wise)],
-                 zValidation=validf0['Z'],
+fit1.3=fitFlexCoDE(xTrain=trainf3[c(colors_broad,colors_galex,colors_wise)],
+                 zTrain=trainf3['Z'],
+                 xValidation=validf3[c(colors_broad,colors_galex,colors_wise)],
+                 zValidation=validf3['Z'],
                  xTest=teste[c(colors_broad,colors_galex,colors_wise)],
                  zTest=teste['Z'],
                  nIMax = 45,
@@ -193,10 +196,10 @@ saveRDS(fit1.3,"fit1_3.rds")
 start.time <- Sys.time()
 
 set.seed(47)
-fit1.4=fitFlexCoDE(xTrain=trainf0[c(colors_broad,colors_galex,colors_wise)],
-                 zTrain=trainf0['Z'],
-                 xValidation=validf0[c(colors_broad,colors_galex,colors_wise)],
-                 zValidation=validf0['Z'],
+fit1.4=fitFlexCoDE(xTrain=trainf4[c(colors_broad,colors_galex,colors_wise)],
+                 zTrain=trainf4['Z'],
+                 xValidation=validf4[c(colors_broad,colors_galex,colors_wise)],
+                 zValidation=validf4['Z'],
                  xTest=teste[c(colors_broad,colors_galex,colors_wise)],
                  zTest=teste['Z'],
                  nIMax = 45,
@@ -270,10 +273,10 @@ saveRDS(fit2,"fit2.rds")
 start.time <- Sys.time()
 
 set.seed(47)
-fit2.1=fitFlexCoDE(xTrain=trainf0[colors_tudo],
-                 zTrain=trainf0['Z'],
-                 xValidation=validf0[colors_tudo],
-                 zValidation=validf0['Z'],
+fit2.1=fitFlexCoDE(xTrain=trainf1[colors_tudo],
+                 zTrain=trainf1['Z'],
+                 xValidation=validf1[colors_tudo],
+                 zValidation=validf1['Z'],
                  xTest=teste[colors_tudo],
                  zTest=teste['Z'],
                  nIMax = 45,
@@ -296,10 +299,10 @@ saveRDS(fit2.1,"fit2_1.rds")
 start.time <- Sys.time()
 
 set.seed(47)
-fit2.2=fitFlexCoDE(xTrain=trainf0[colors_tudo],
-                 zTrain=trainf0['Z'],
-                 xValidation=validf0[colors_tudo],
-                 zValidation=validf0['Z'],
+fit2.2=fitFlexCoDE(xTrain=trainf2[colors_tudo],
+                 zTrain=trainf2['Z'],
+                 xValidation=validf2[colors_tudo],
+                 zValidation=validf2['Z'],
                  xTest=teste[colors_tudo],
                  zTest=teste['Z'],
                  nIMax = 45,
@@ -322,10 +325,10 @@ saveRDS(fit2.2,"fit2_2.rds")
 start.time <- Sys.time()
 
 set.seed(47)
-fit2.3=fitFlexCoDE(xTrain=trainf0[colors_tudo],
-                 zTrain=trainf0['Z'],
-                 xValidation=validf0[colors_tudo],
-                 zValidation=validf0['Z'],
+fit2.3=fitFlexCoDE(xTrain=trainf3[colors_tudo],
+                 zTrain=trainf3['Z'],
+                 xValidation=validf3[colors_tudo],
+                 zValidation=validf3['Z'],
                  xTest=teste[colors_tudo],
                  zTest=teste['Z'],
                  nIMax = 45,
@@ -348,10 +351,10 @@ saveRDS(fit2.3,"fit2_3.rds")
 start.time <- Sys.time()
 
 set.seed(47)
-fit2.4=fitFlexCoDE(xTrain=trainf0[colors_tudo],
-                 zTrain=trainf0['Z'],
-                 xValidation=validf0[colors_tudo],
-                 zValidation=validf0['Z'],
+fit2.4=fitFlexCoDE(xTrain=trainf4[colors_tudo],
+                 zTrain=trainf4['Z'],
+                 xValidation=validf4[colors_tudo],
+                 zValidation=validf4['Z'],
                  xTest=teste[colors_tudo],
                  zTest=teste['Z'],
                  nIMax = 45,
@@ -471,6 +474,13 @@ pred_mean_narrow = readRDS("pred_mean_narrow.rds")
 cde_loss(pred_mean_broad$CDE, pred_mean_broad$z, ztest)
 cde_loss(pred_mean_narrow$CDE, pred_mean_narrow$z, ztest)
 ```
+Estimativas pontuais:
+
+```{r}
+# Média das curvas
+meanz_1.1 = pred_mean_broad$CDE %*% pred_mean_broad$z / rowSums(pred_mean_broad$CDE)
+meanz2.2 = pred_mean_narrow$CDE %*% pred_mean_narrow$z / rowSums(pred_mean_narrow$CDE)
+```
 
 Comparação das densidades com e sem _narrow_:
 
@@ -544,22 +554,20 @@ ggplot(data=data2.1, aes(x=x,y=y)) +
 ```
 ```{r}
 # Valores da banda r_PStotal e de Z nas amostras
+print('RA:')
 round(teste[amostras,]$RA_1,3)
+print('DEC:')
 round(teste[amostras,]$DEC_1,3)
+print('r_PStotal:')
 round(teste[amostras,]$r_PStotal,3)
+print('z_spec:')
 round(teste[amostras,]$Z,3)
+print('z_pred(broad):')
 round(meanz_1.1[amostras],3)
+print('z_pred(narrow):')
 round(meanz2.2[amostras],3)
 ```
-
-
-Estimativas pontuais:
-
-```{r}
-# Média das curvas
-meanz_1.1 = pred_mean_broad$CDE %*% pred_mean_broad$z / rowSums(pred_mean_broad$CDE)
-meanz2.2 = pred_mean_narrow$CDE %*% pred_mean_narrow$z / rowSums(pred_mean_narrow$CDE)
-```
+Métricas:
 
 ```{r}
 # EQM
@@ -577,6 +585,14 @@ sqrt(mean((ztest$Z - meanz2.2)^2))
 # NMAD
 1.48*median(abs(meanz_1.1-ztest$Z - median(meanz_1.1-ztest$Z)) / (1+ztest$Z))
 1.48*median(abs(meanz2.2-ztest$Z - median(meanz2.2-ztest$Z)) / (1+ztest$Z))
+```
+```{r}
+# Fração outliers
+eta1 = abs(meanz_1.1-ztest$Z)/(1+ztest$Z)
+eta2 = abs(meanz2.2-ztest$Z)/(1+ztest$Z)
+
+sum(eta1>0.15)/length(ztest$Z)
+sum(eta2>0.15)/length(ztest$Z)
 ```
 
 Comparação das estimativas pontuais:
@@ -613,7 +629,7 @@ ggplot(cov1.1, aes(x=x)) +
  geom_density(colour="#0072B2")+
  theme_light()+
   theme(plot.title=element_text(hjust=0.5))+
- labs(x="Cobertura da FDA", y="Densidade", title="Distribuição dos PIT values - Modelo com narrow bands")
+ labs(x="Cobertura da FDA", y="Densidade", title="Distribuição dos PIT values - Modelo sem narrow bands")
 ```
 ```{r}
 # P-P Plot
@@ -640,7 +656,7 @@ ggplot(cov2.2, aes(x=x)) +
  geom_density(colour="#0072B2")+
  theme_light()+
  theme(plot.title=element_text(hjust=0.5))+
- labs(x="Cobertura da FDA", y="Densidade", title="Distribuição dos PIT values - Modelo sem narrow bands")
+ labs(x="Cobertura da FDA", y="Densidade", title="Distribuição dos PIT values - Modelo com narrow bands")
 ```
 
 ```{r}
@@ -857,14 +873,19 @@ ggplot(data=data2.1, aes(x=x,y=y)) +
 
 ```{r}
 # Valores da banda r_PStotal e de Z nas amostras
+print('RA:')
 round(colors_narrow[amostras,]$RA,3)
+print('DEC:')
 round(colors_narrow[amostras,]$DEC,3)
+print('r_PStotal:')
 round(colors_narrow[amostras,]$r_PStotal,3)
+print('z_spec:')
 round(colors_narrow[amostras,]$z,3)
+print('z_pred(broad):')
 round(colors_broad[amostras,]$zml,3)
+print('z_pred(narrow):')
 round(colors_narrow[amostras,]$zml,3)
 ```
-
 
 Estimativas pontuais:
 
@@ -886,6 +907,14 @@ sqrt(mean((colors_narrow$zml - colors_narrow$z)^2))
             median(colors_broad$zml - colors_broad$z)) / (1+colors_broad$z))
 1.48*median(abs(colors_narrow$zml - colors_narrow$z - 
             median(colors_narrow$zml - colors_narrow$z)) / (1+colors_narrow$z))
+```
+```{r}
+# Fração outliers
+eta1 = abs(colors_broad$zml-colors_broad$z)/(1+colors_broad$z)
+eta2 = abs(colors_narrow$zml-colors_narrow$z)/(1+colors_narrow$z)
+
+sum(eta1>0.15)/length(colors_broad$z)
+sum(eta2>0.15)/length(colors_narrow$z)
 ```
 
 Comparação estimações pontuais com e sem narrow:
