@@ -736,6 +736,32 @@ ggplot(df_odds, aes(x=narrow)) +
  theme(plot.title=element_text(hjust=0.5))+
  labs(x="Odds", y="Densidade", title="Distribuição da odds - Modelo com narrow bands")
 ```
+```{r}
+# Entropia
+
+# Sem narrow
+entrop = c()
+for(i in 1:nrow(pred_mean_broad$CDE)){
+  aux = pred_mean_broad$CDE[i,]*log(pred_mean_broad$CDE[i,])
+  entrop[i] = -sum(aux[pred_mean_broad$CDE[i,] != 0])
+}
+mean(entrop); sd(entrop)/sqrt(length(entrop))
+```
+
+```{r}
+# Com narrow
+entrop2 = c()
+for(i in 1:nrow(pred_mean_narrow$CDE)){
+  aux = pred_mean_narrow$CDE[i,]*log(pred_mean_narrow$CDE[i,])
+  entrop2[i] = -sum(aux[pred_mean_narrow$CDE[i,] != 0])
+}
+mean(entrop2); sd(entrop2)/sqrt(length(entrop2))
+```
+
+```{r}
+boxplot(entrop, entrop2)
+```
+
 
 # Modelo com Redes Neurais
 
@@ -1034,5 +1060,28 @@ ggplot(df_odds, aes(x=odds_n_nn)) +
 ```{r}
 write.csv(colors_broad$PIT, "pit_broad_nn.csv")
 write.csv(colors_narrow$PIT, "pit_narrow_nn.csv")
+```
+
+```{r}
+# Entropia
+
+# Sem narrow
+entrop_nn = c()
+for(i in 1:nrow(dens_matrix_b)){
+  aux = dens_matrix_b[i,]*log(dens_matrix_b[i,])
+  entrop_nn[i] = -sum(aux[dens_matrix_b[i,] != 0])
+}
+mean(entrop_nn); sd(entrop_nn)/sqrt(length(entrop_nn))
+```
+```{r}
+entrop_nn2 = c()
+for(i in 1:nrow(dens_matrix_n)){
+  aux = dens_matrix_n[i,]*log(dens_matrix_n[i,])
+  entrop_nn2[i] = -sum(aux[dens_matrix_n[i,] != 0])
+}
+mean(entrop_nn2); sd(entrop_nn2)/sqrt(length(entrop_nn2))
+```
+```{r}
+boxplot(entrop_nn, entrop_nn2)
 ```
 
